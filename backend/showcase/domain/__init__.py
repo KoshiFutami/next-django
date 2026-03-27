@@ -7,12 +7,13 @@ from showcase.domain.exceptions import DomainError, DomainValidationError
 from showcase.domain.owner import Owner
 from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
-from showcase.domain.repositories import BreedRepository, OwnerRepository
+from showcase.domain.repositories import BreedRepository, DogRepository, OwnerRepository
 
 __all__ = [
     "Breed",
     "BreedRepository",
     "Dog",
+    "DogRepository",
     "DomainError",
     "DomainValidationError",
     "Email",
