@@ -2,7 +2,9 @@ DC := docker compose
 
 .PHONY: help up down restart ps logs build pull \
 	bash-backend bash-db psql \
-	migrate makemigrations test
+	migrate makemigrations test \
+	pr pr-draft pr-web \
+	commit review approve push
 
 help:
 	@echo "Usage: make <target>"
@@ -25,6 +27,15 @@ help:
 	@echo "  migrate       Run Django migrations"
 	@echo "  makemigrations Create Django migration files"
 	@echo "  test          Run backend pytest"
+	@echo ""
+	@echo "Git / GitHub:"
+	@echo "  commit        git commit (staged changes required)"
+	@echo "  push          git push -u origin HEAD"
+	@echo "  pr            gh pr create --fill (needs gh)"
+	@echo "  pr-draft      gh pr create --draft --fill"
+	@echo "  pr-web        gh pr create --web"
+	@echo "  review        gh pr view"
+	@echo "  approve       gh pr review --approve"
 
 up:
 	$(DC) up -d
@@ -64,3 +75,33 @@ makemigrations:
 
 test:
 	$(DC) exec backend pytest -q
+
+pr:
+	@command -v gh >/dev/null || (echo "gh が必要です: https://cli.github.com/ （例: brew install gh）" && false)
+	gh pr create --fill
+
+pr-draft:
+	@command -v gh >/dev/null || (echo "gh が必要です: https://cli.github.com/" && false)
+	gh pr create --draft --fill
+
+pr-web:
+	@command -v gh >/dev/null || (echo "gh が必要です: https://cli.github.com/" && false)
+	gh pr create --web
+
+commit:
+	@if [ -z "$$(git diff --cached --name-only)" ]; then \
+		echo "ステージされた変更がありません。git add してから再実行してください。"; \
+		exit 1; \
+	fi
+	git commit
+
+push:
+	git push -u origin HEAD
+
+review:
+	@command -v gh >/dev/null || (echo "gh が必要です: https://cli.github.com/" && false)
+	gh pr view
+
+approve:
+	@command -v gh >/dev/null || (echo "gh が必要です: https://cli.github.com/" && false)
+	gh pr review --approve

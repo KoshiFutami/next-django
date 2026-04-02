@@ -50,6 +50,16 @@ ORM モデルは `showcase/models.py`。
 - 人向け一覧: `docs/api.md`
 - Postman: `docs/postman/`（`next-django-mvp.postman_collection.json` など）
 
+## GitHub / PR
+
+- [GitHub CLI](https://cli.github.com/)（`gh`）を入れ、`gh auth login` 済みであること
+- ブランチを push したあと: `make pr`（`gh pr create --fill`）。下書きは `make pr-draft`、ブラウザは `make pr-web`
+- ローカル: `make commit`（ステージ済みのみ `git commit`）、`make push`（`git push -u origin HEAD`）
+- `gh` 利用: `make review`（`gh pr view`）、`make approve`（`gh pr review --approve`）
+- PR の本文テンプレート: `.github/pull_request_template.md`
+- Cursor 用コマンド定義: `.cursor/commands/commit.md` など（4 ファイル）
+- エージェント向け手順: `.cursor/skills/github-pr/SKILL.md`
+
 ## 細かいコーディング規約
 
 エディタ・エージェント向けの詳細ルールは **`.cursor/rules/`** の `.mdc` に置く。ここは要約のみ。

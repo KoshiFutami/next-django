@@ -39,3 +39,7 @@ docker compose exec backend python manage.py seed_stub_owner
 
 - `requirements.txt` や `Dockerfile` を変えたらイメージ再ビルドが必要
 - Python の import は `showcase.` から（`backend.showcase` のような誤パスにしない）
+
+## PR を出すとき
+
+- `git push` 後に `make pr`（要 `gh`）。詳細は `github-pr` スキル参照。
