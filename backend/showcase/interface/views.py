@@ -1,6 +1,7 @@
 from http import HTTPStatus
 import json
 
+from django.db import DatabaseError, connection
 from django.views.decorators.csrf import csrf_exempt
 from showcase.application.list_breeds import ListBreedsUseCase
 from showcase.infrastructure import DjangoBreedRepository
@@ -11,8 +12,31 @@ from showcase.interface.auth import get_current_owner_id
 from showcase.application.create_dog import CreateDogUseCase
 from showcase.interface.serializers import breed_to_json, dog_to_json
 
+
+def parse_request_payload(request) -> dict:
+    content_type = (request.content_type or "").split(";")[0].strip().lower()
+    if content_type == "application/json":
+        if not request.body:
+            return {}
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise ValueError("Invalid JSON body") from exc
+        if not isinstance(payload, dict):
+            raise ValueError("JSON body must be an object")
+        return payload
+    return request.POST.dict()
+
 # Health Check
 def health(_request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+    except DatabaseError:
+        return json_response(
+            {"code": "service_unavailable", "message": "Database unavailable"},
+            status=HTTPStatus.SERVICE_UNAVAILABLE,
+        )
     return json_response({"status": "ok"})
 
 # Dogs
@@ -31,9 +55,7 @@ def dogs_create(request):
     try:
         owner_id = get_current_owner_id(request)
         use_case = CreateDogUseCase(DjangoDogRepository())
-        payload = request.POST.dict()
-        if not payload and request.body:
-            payload = json.loads(request.body.decode("utf-8"))
+        payload = parse_request_payload(request)
         dog = use_case.execute(owner_id, payload)
         return json_response(
             payload=dog_to_json(dog),
