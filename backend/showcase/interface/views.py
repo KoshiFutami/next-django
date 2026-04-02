@@ -13,10 +13,12 @@ from showcase.interface.serializers import breed_to_json, dog_to_json
 
 # Health Check
 def health(_request):
+    """ヘルスチェックを返す。"""
     return json_response({"status": "ok"})
 
 # Dogs
 def dogs_list(request):
+    """現在のオーナーに紐づく犬一覧を返す。"""
     if request.method != "GET":
         return json_response(
             {"code": "method_not_allowed", "message": "Method not allowed"},
@@ -28,6 +30,7 @@ def dogs_list(request):
     return json_response({"items": [dog_to_json(d) for d in dogs]})
 
 def dogs_create(request):
+    """現在のオーナーに犬を登録する。"""
     try:
         owner_id = get_current_owner_id(request)
         use_case = CreateDogUseCase(DjangoDogRepository())
@@ -53,6 +56,7 @@ def dogs_create(request):
 
 @csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
 def dogs(request):
+    """`/api/dogs/` の GET/POST をディスパッチする。"""
     if request.method == "GET":
         return dogs_list(request)
     if request.method != "POST":
@@ -64,6 +68,7 @@ def dogs(request):
 
 # Breeds
 def breeds_list(request):
+    """犬種一覧を返す。"""
     if request.method != "GET":
         return json_response(
             {"code": "method_not_allowed", "message": "Method not allowed"},
