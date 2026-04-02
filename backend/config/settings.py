@@ -44,6 +44,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
+CSRF_FAILURE_VIEW = "showcase.interface.error_handlers.csrf_failure"
 
 TEMPLATES = [
     {
@@ -98,6 +99,16 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# 開発用: 犬一覧などの認証スタブで使う OwnerProfile.id（UUID 文字列）
+SHOWCASE_STUB_OWNER_ID = os.environ.get(
+    "SHOWCASE_STUB_OWNER_ID",
+    "00000000-0000-0000-0000-000000000001",
+)
+SHOWCASE_STUB_OWNER_EMAIL = os.environ.get(
+    "SHOWCASE_STUB_OWNER_EMAIL",
+    "koshi.futami@gmail.com",
+)
 
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
