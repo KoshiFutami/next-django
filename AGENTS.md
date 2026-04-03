@@ -17,6 +17,10 @@
 
 ORM モデルは `showcase/models.py`。
 
+## アーキテクチャ意思決定（ADR）
+
+設計の「なぜそうしたか」は [docs/adr/](docs/adr/) に記録する。
+
 ## ローカル運用
 
 - 起動: `make up`
