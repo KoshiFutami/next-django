@@ -52,6 +52,10 @@ Django `User` + `OwnerProfile` と整合させる。
 | PATCH | `/dogs/{dog_id}/` | 要 | 更新（プロフィール画像キー含む） |
 | DELETE | `/dogs/{dog_id}/` | 要 | 削除（任意） |
 
+**DELETE `/dogs/{dog_id}/`**
+
+- 成功時は **204 No Content**（**レスポンス本文なし**）。該当しない ID や他人の犬は **404**、`{"code":"not_found","message":"..."}` 形式の JSON。
+
 **GET `/dogs/`（実装済み・認証スタブ）**
 
 - 現在の Owner は `SHOWCASE_STUB_OWNER_ID`（環境変数、未設定時は `00000000-0000-0000-0000-000000000001`）で固定。JWT 導入後に差し替え。
