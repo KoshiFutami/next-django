@@ -46,6 +46,26 @@ def dog_row_to_domain(row: DogRow) -> Dog:
     )
 
 
+def create_owner_with_password(owner: Owner, password: str) -> None:
+    """新規 User + OwnerProfile を作成する。`username` はメールと同一。"""
+    User = get_user_model()
+    email = owner.email.value
+    user = User.objects.create_user(
+        username=email,
+        email=email,
+        password=password,
+    )
+    OwnerProfileRow.objects.create(
+        id=owner.id.value,
+        user=user,
+        nickname=owner.nickname,
+        profile_image_key=owner.profile_image_key.value
+        if owner.profile_image_key
+        else None,
+        created_at=owner.created_at,
+    )
+
+
 def persist_owner(owner: Owner) -> None:
     User = get_user_model()
     email = owner.email.value

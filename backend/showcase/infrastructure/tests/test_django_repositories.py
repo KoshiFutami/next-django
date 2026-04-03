@@ -2,10 +2,12 @@ from datetime import date
 from uuid import uuid4
 
 import pytest
+from django.contrib.auth import get_user_model
 
 from showcase.domain.breed import Breed
 from showcase.domain.dog import Dog
 from showcase.domain.email import Email
+from showcase.domain.exceptions import EmailAlreadyRegisteredError
 from showcase.domain.owner import Owner
 from showcase.domain.profile_image_key import ProfileImageKey
 from showcase.infrastructure.django_repositories import (
@@ -29,6 +31,30 @@ def test_owner_roundtrip():
     by_email = repos.get_by_email(Email.parse("a@example.com"))
     assert by_email is not None
     assert by_email.id == owner.id
+
+
+@pytest.mark.django_db
+def test_register_with_password_roundtrip():
+    owner = Owner.register(email=Email.parse("reg@example.com"), nickname="登録")
+    repos = DjangoOwnerRepository()
+    assert repos.is_email_registered(Email.parse("reg@example.com")) is False
+    repos.register_with_password(owner, "repo_test_pass_9")
+    assert repos.is_email_registered(Email.parse("reg@example.com")) is True
+    got = repos.get_by_email(Email.parse("reg@example.com"))
+    assert got is not None
+    assert got.nickname == "登録"
+    u = get_user_model().objects.get(username="reg@example.com")
+    assert u.check_password("repo_test_pass_9")
+
+
+@pytest.mark.django_db
+def test_register_with_password_duplicate_raises():
+    owner = Owner.register(email=Email.parse("twice@example.com"), nickname="A")
+    repos = DjangoOwnerRepository()
+    repos.register_with_password(owner, "dup_test_pass_9")
+    other = Owner.register(email=Email.parse("twice@example.com"), nickname="B")
+    with pytest.raises(EmailAlreadyRegisteredError):
+        repos.register_with_password(other, "dup_test_pass_9b")
 
 
 @pytest.mark.django_db

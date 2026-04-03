@@ -81,6 +81,19 @@ def test_auth_me_patch_empty_nickname_returns_400():
 
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
+def test_auth_me_get_with_invalid_bearer_returns_401():
+    _stub_owner()
+    client = Client()
+    res = client.get(
+        "/api/auth/me/",
+        HTTP_AUTHORIZATION="Bearer not-a-valid-jwt",
+    )
+    assert res.status_code == 401
+    assert res.json()["code"] == "unauthorized"
+
+
+@pytest.mark.django_db
+@override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_auth_me_method_post_returns_405():
     _stub_owner()
     client = Client()

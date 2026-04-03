@@ -3,10 +3,12 @@
 from uuid import UUID
 
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 
 from showcase.domain.breed import Breed
 from showcase.domain.dog import Dog
 from showcase.domain.email import Email
+from showcase.domain.exceptions import EmailAlreadyRegisteredError
 from showcase.domain.owner import Owner
 from showcase.domain.owner_id import OwnerId
 from showcase.infrastructure import mappers
@@ -36,6 +38,16 @@ class DjangoOwnerRepository:
 
     def save(self, owner: Owner) -> None:
         mappers.persist_owner(owner)
+
+    def is_email_registered(self, email: Email) -> bool:
+        User = get_user_model()
+        return User.objects.filter(username=email.value).exists()
+
+    def register_with_password(self, owner: Owner, password: str) -> None:
+        try:
+            mappers.create_owner_with_password(owner, password)
+        except IntegrityError as exc:
+            raise EmailAlreadyRegisteredError from exc
 
 
 class DjangoBreedRepository:

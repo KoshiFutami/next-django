@@ -3,6 +3,7 @@ Django settings for config project.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework_simplejwt",
     "showcase",
 ]
 
@@ -102,6 +104,14 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "SIGNING_KEY": SECRET_KEY,
+    "ALGORITHM": "HS256",
+}
 
 # 開発用: 犬一覧などの認証スタブで使う OwnerProfile.id（UUID 文字列）
 SHOWCASE_STUB_OWNER_ID = os.environ.get(
