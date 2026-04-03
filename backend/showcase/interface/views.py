@@ -27,6 +27,7 @@ from showcase.application.update_my_profile import UpdateMyProfileUseCase
 from showcase.domain.exceptions import (
     DomainValidationError,
     EmailAlreadyRegisteredError,
+    HandleAlreadyRegisteredError,
 )
 from showcase.infrastructure import DjangoBreedRepository, DjangoOwnerRepository
 from showcase.infrastructure.django_repositories import DjangoDogRepository
@@ -119,6 +120,14 @@ def patch_auth_me(request):
             {"code": "bad_request", "message": str(exc)},
             status=HTTPStatus.BAD_REQUEST,
         )
+    except HandleAlreadyRegisteredError:
+        return json_response(
+            {
+                "code": "handle_already_registered",
+                "message": "このハンドルは既に使われています",
+            },
+            status=HTTPStatus.CONFLICT,
+        )
     except OwnerAuthError as exc:
         return _unauthorized_json(str(exc))
 
@@ -160,6 +169,14 @@ def post_auth_register(request):
             {
                 "code": "email_already_registered",
                 "message": "このメールアドレスは既に登録されています",
+            },
+            status=HTTPStatus.CONFLICT,
+        )
+    except HandleAlreadyRegisteredError:
+        return json_response(
+            {
+                "code": "handle_already_registered",
+                "message": "このハンドルは既に使われています",
             },
             status=HTTPStatus.CONFLICT,
         )

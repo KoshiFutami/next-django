@@ -6,12 +6,20 @@ from typing import Any
 
 from showcase.domain.email import Email
 from showcase.domain.exceptions import DomainValidationError
+from showcase.domain.handle import parse_optional_handle
 from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
 
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _validate_full_name(full_name: str) -> str:
+    name = (full_name or "").strip()
+    if len(name) > 128:
+        raise DomainValidationError("full_name_too_long")
+    return name
 
 
 @dataclass(slots=True)
@@ -21,6 +29,8 @@ class Owner:
     id: OwnerId
     email: Email
     nickname: str
+    full_name: str = ""
+    handle: str | None = None
     profile_image_key: ProfileImageKey | None = None
     created_at: datetime = field(default_factory=_utc_now)
 
@@ -30,6 +40,8 @@ class Owner:
         *,
         email: Email,
         nickname: str,
+        full_name: str = "",
+        handle: str | None = None,
         profile_image_key: ProfileImageKey | None = None,
     ) -> "Owner":
         """新規登録のファクトリ。不変条件はここに集約する。"""
@@ -38,10 +50,14 @@ class Owner:
             raise DomainValidationError("nickname_empty")
         if len(nick) > 64:
             raise DomainValidationError("nickname_too_long")
+        fn = _validate_full_name(full_name)
+        handle_norm = parse_optional_handle(handle)
         return cls(
             id=OwnerId.generate(),
             email=email,
             nickname=nick,
+            full_name=fn,
+            handle=handle_norm,
             profile_image_key=profile_image_key,
             created_at=_utc_now(),
         )
@@ -49,6 +65,12 @@ class Owner:
     def merge_patch(self, patch: dict[str, Any]) -> "Owner":
         """許可キーのみ上書きした新インスタンス。値はアプリケーション層で型済み。"""
         nickname = patch["nickname"] if "nickname" in patch else self.nickname
+        if "full_name" in patch:
+            raw_fn = patch["full_name"]
+            full_name = "" if raw_fn is None else str(raw_fn)
+        else:
+            full_name = self.full_name
+        handle_in_patch = "handle" in patch
         profile_image_key = (
             patch["profile_image_key"]
             if "profile_image_key" in patch
@@ -59,12 +81,24 @@ class Owner:
             raise DomainValidationError("nickname_empty")
         if len(nick) > 64:
             raise DomainValidationError("nickname_too_long")
+        fn = _validate_full_name(full_name)
+        handle_norm: str | None
+        if handle_in_patch:
+            h = patch["handle"]
+            if h is None or h == "":
+                handle_norm = None
+            else:
+                handle_norm = parse_optional_handle(str(h))
+        else:
+            handle_norm = self.handle
         if profile_image_key and len(profile_image_key.value) > 512:
             raise DomainValidationError("profile_image_key_too_long")
         return Owner(
             id=self.id,
             email=self.email,
             nickname=nick,
+            full_name=fn,
+            handle=handle_norm,
             profile_image_key=profile_image_key,
             created_at=self.created_at,
         )

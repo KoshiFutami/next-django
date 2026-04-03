@@ -14,6 +14,19 @@ class OwnerProfile(models.Model):
         related_name="owner_profile",
     )
     nickname = models.CharField(max_length=64)
+    full_name = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text="本名（任意）",
+    )
+    handle = models.CharField(
+        max_length=30,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="公開ハンドル（小文字・@ なし、一意）",
+    )
     pii_email_ciphertext = models.TextField(
         blank=True,
         null=True,

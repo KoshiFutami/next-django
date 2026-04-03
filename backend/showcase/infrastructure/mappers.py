@@ -25,6 +25,8 @@ def owner_profile_to_domain(row: OwnerProfileRow) -> Owner:
         id=OwnerId(value=row.id),
         email=_owner_email_from_row(row),
         nickname=row.nickname,
+        full_name=row.full_name or "",
+        handle=row.handle,
         profile_image_key=ProfileImageKey.parse(row.profile_image_key)
         if row.profile_image_key
         else None,
@@ -66,6 +68,8 @@ def create_owner_with_password(owner: Owner, password: str) -> None:
         id=owner.id.value,
         user=user,
         nickname=owner.nickname,
+        full_name=owner.full_name,
+        handle=owner.handle,
         pii_email_ciphertext=pii_crypto.encrypt_pii(owner.email.value),
         profile_image_key=owner.profile_image_key.value
         if owner.profile_image_key
@@ -89,6 +93,8 @@ def persist_owner(owner: Owner) -> None:
         defaults={
             "user": user,
             "nickname": owner.nickname,
+            "full_name": owner.full_name,
+            "handle": owner.handle,
             "pii_email_ciphertext": pii_crypto.encrypt_pii(owner.email.value),
             "profile_image_key": owner.profile_image_key.value
             if owner.profile_image_key

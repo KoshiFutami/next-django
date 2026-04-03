@@ -1,9 +1,12 @@
+from showcase.domain.exceptions import HandleAlreadyRegisteredError
 from showcase.domain.owner import Owner
 from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
 from showcase.domain.repositories import OwnerRepository
 
-_ALLOWED_PATCH_KEYS = frozenset({"nickname", "profile_image_key"})
+_ALLOWED_PATCH_KEYS = frozenset(
+    {"nickname", "profile_image_key", "full_name", "handle"}
+)
 
 
 def _normalize_patch(raw: dict) -> dict:
@@ -21,6 +24,13 @@ def _normalize_patch(raw: dict) -> dict:
                 patch[key] = None
             else:
                 patch[key] = ProfileImageKey.parse(str(val))
+        elif key == "full_name":
+            patch[key] = "" if val is None else str(val)
+        elif key == "handle":
+            if val is None or val == "":
+                patch[key] = None
+            else:
+                patch[key] = str(val)
     return patch
 
 
@@ -36,5 +46,10 @@ class UpdateMyProfileUseCase:
         if not normalized:
             return owner
         updated = owner.merge_patch(normalized)
+        if updated.handle != owner.handle and updated.handle is not None:
+            if self.owner_repository.is_handle_taken(
+                updated.handle, exclude_owner_id=owner_id
+            ):
+                raise HandleAlreadyRegisteredError
         self.owner_repository.save(updated)
         return updated

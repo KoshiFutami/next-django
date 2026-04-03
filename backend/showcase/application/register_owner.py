@@ -2,7 +2,10 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 
 from showcase.domain.email import Email
-from showcase.domain.exceptions import EmailAlreadyRegisteredError
+from showcase.domain.exceptions import (
+    EmailAlreadyRegisteredError,
+    HandleAlreadyRegisteredError,
+)
 from showcase.domain.owner import Owner
 from showcase.domain.profile_image_key import ProfileImageKey
 from showcase.domain.repositories import OwnerRepository
@@ -42,10 +45,20 @@ class RegisterOwnerUseCase:
             raise EmailAlreadyRegisteredError
 
         profile_image_key = _optional_profile_image_key(raw)
-        owner = Owner.register(
-            email=email,
-            nickname=nickname,
-            profile_image_key=profile_image_key,
-        )
+        reg_kwargs: dict = {
+            "email": email,
+            "nickname": nickname,
+            "profile_image_key": profile_image_key,
+        }
+        if "full_name" in raw:
+            reg_kwargs["full_name"] = (
+                "" if raw["full_name"] is None else str(raw["full_name"])
+            )
+        if "handle" in raw:
+            h = raw["handle"]
+            reg_kwargs["handle"] = None if h is None else str(h)
+        owner = Owner.register(**reg_kwargs)
+        if owner.handle and self._repo.is_handle_taken(owner.handle):
+            raise HandleAlreadyRegisteredError
         self._repo.register_with_password(owner, password)
         return owner

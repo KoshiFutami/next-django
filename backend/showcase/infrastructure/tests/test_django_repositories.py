@@ -61,6 +61,24 @@ def test_register_with_password_duplicate_raises():
 
 
 @pytest.mark.django_db
+def test_owner_full_name_handle_roundtrip_and_is_handle_taken():
+    owner = Owner.register(
+        email=Email.parse("handle_r@example.com"),
+        nickname="nick",
+        full_name="本名",
+        handle="repo_handle_9",
+    )
+    repos = DjangoOwnerRepository()
+    repos.register_with_password(owner, "handle_repo_pass_9")
+    got = repos.get_by_email(Email.parse("handle_r@example.com"))
+    assert got is not None
+    assert got.full_name == "本名"
+    assert got.handle == "repo_handle_9"
+    assert repos.is_handle_taken("repo_handle_9") is True
+    assert repos.is_handle_taken("repo_handle_9", exclude_owner_id=owner.id) is False
+
+
+@pytest.mark.django_db
 def test_breed_and_dog_roundtrip():
     breed = Breed.create(code=1, name="柴犬", sort_order=0)
     breed_repos = DjangoBreedRepository()

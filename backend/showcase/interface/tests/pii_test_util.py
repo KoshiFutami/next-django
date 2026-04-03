@@ -1,4 +1,4 @@
-"""API テスト用: メール HMAC ユーザー名・暗号化メール・暗号化犬名。"""
+"""API テスト用: メール HMAC ユーザー名・暗号化メール。"""
 
 from datetime import datetime, timezone
 from uuid import UUID

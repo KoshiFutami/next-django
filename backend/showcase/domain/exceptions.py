@@ -11,3 +11,7 @@ class DomainValidationError(DomainError):
 
 class EmailAlreadyRegisteredError(DomainError):
     """同じメールアドレスで既に利用者が登録されている。"""
+
+
+class HandleAlreadyRegisteredError(DomainError):
+    """同じハンドルで既に利用者が登録されている。"""

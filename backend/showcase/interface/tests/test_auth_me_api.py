@@ -35,6 +35,8 @@ def test_auth_me_get_returns_profile():
     assert data["id"] == str(STUB_OWNER_ID)
     assert data["email"] == "me@example.com"
     assert data["nickname"] == "スタブ"
+    assert data["full_name"] == ""
+    assert data["handle"] is None
     assert data["profile_image_key"] is None
     assert "created_at" in data
 
@@ -62,6 +64,67 @@ def test_auth_me_patch_updates_nickname():
     assert res.json()["nickname"] == "新ニック"
     row = OwnerProfileRow.objects.get(pk=STUB_OWNER_ID)
     assert row.nickname == "新ニック"
+
+
+@pytest.mark.django_db
+@override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
+def test_auth_me_patch_updates_full_name_and_handle():
+    _stub_owner()
+    client = Client()
+    res = client.patch(
+        "/api/auth/me/",
+        data=json.dumps(
+            {
+                "full_name": "  山田 花子  ",
+                "handle": "@hanako_y",
+            }
+        ),
+        content_type="application/json",
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["full_name"] == "山田 花子"
+    assert data["handle"] == "hanako_y"
+    row = OwnerProfileRow.objects.get(pk=STUB_OWNER_ID)
+    assert row.full_name == "山田 花子"
+    assert row.handle == "hanako_y"
+
+
+@pytest.mark.django_db
+def test_auth_me_patch_duplicate_handle_returns_409():
+    client = Client()
+    for email, handle, nick in (
+        ("h1@example.com", "taken_handle_9", "A"),
+        ("h2@example.com", "other_handle_9", "B"),
+    ):
+        r = client.post(
+            "/api/auth/register/",
+            data=json.dumps(
+                {
+                    "email": email,
+                    "password": "dup_handle_pass_9",
+                    "nickname": nick,
+                    "handle": handle,
+                }
+            ),
+            content_type="application/json",
+        )
+        assert r.status_code == 201
+    login = client.post(
+        "/api/auth/login/",
+        data=json.dumps({"email": "h2@example.com", "password": "dup_handle_pass_9"}),
+        content_type="application/json",
+    )
+    assert login.status_code == 200
+    access = login.json()["access"]
+    res = client.patch(
+        "/api/auth/me/",
+        data=json.dumps({"handle": "taken_handle_9"}),
+        content_type="application/json",
+        HTTP_AUTHORIZATION=f"Bearer {access}",
+    )
+    assert res.status_code == 409
+    assert res.json()["code"] == "handle_already_registered"
 
 
 @pytest.mark.django_db

@@ -29,7 +29,29 @@ def test_owner_register_success():
     assert isinstance(owner.id, OwnerId)
     assert owner.nickname == "太郎"
     assert owner.email.value == "owner@example.com"
+    assert owner.full_name == ""
+    assert owner.handle is None
     assert owner.profile_image_key is None
+
+
+def test_owner_register_with_full_name_and_handle():
+    owner = Owner.register(
+        email=Email.parse("owner@example.com"),
+        nickname="太郎",
+        full_name="  山田 太郎  ",
+        handle="@yamada_tarou",
+    )
+    assert owner.full_name == "山田 太郎"
+    assert owner.handle == "yamada_tarou"
+
+
+def test_owner_register_rejects_long_full_name():
+    with pytest.raises(DomainValidationError, match="full_name_too_long"):
+        Owner.register(
+            email=Email.parse("a@b.co"),
+            nickname="x",
+            full_name="あ" * 129,
+        )
 
 
 @pytest.mark.parametrize("nickname", ["", "   "])
@@ -83,3 +105,26 @@ def test_owner_merge_patch_rejects_long_nickname():
     owner = Owner.register(email=Email.parse("o@example.com"), nickname="太郎")
     with pytest.raises(DomainValidationError, match="nickname_too_long"):
         owner.merge_patch({"nickname": "x" * 65})
+
+
+def test_owner_merge_patch_updates_full_name_and_handle():
+    owner = Owner.register(
+        email=Email.parse("o@example.com"),
+        nickname="太郎",
+        handle="old_handle",
+    )
+    updated = owner.merge_patch(
+        {"full_name": "新 名前", "handle": "@new_handle"},
+    )
+    assert updated.full_name == "新 名前"
+    assert updated.handle == "new_handle"
+
+
+def test_owner_merge_patch_clears_handle():
+    owner = Owner.register(
+        email=Email.parse("o@example.com"),
+        nickname="太郎",
+        handle="keep_or_clear",
+    )
+    updated = owner.merge_patch({"handle": None})
+    assert updated.handle is None

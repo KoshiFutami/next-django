@@ -45,6 +45,14 @@ class DjangoOwnerRepository:
             username=pii_crypto.email_login_username(email)
         ).exists()
 
+    def is_handle_taken(
+        self, normalized_handle: str, *, exclude_owner_id: OwnerId | None = None
+    ) -> bool:
+        qs = OwnerProfileRow.objects.filter(handle=normalized_handle)
+        if exclude_owner_id is not None:
+            qs = qs.exclude(pk=exclude_owner_id.value)
+        return qs.exists()
+
     def register_with_password(self, owner: Owner, password: str) -> None:
         try:
             mappers.create_owner_with_password(owner, password)

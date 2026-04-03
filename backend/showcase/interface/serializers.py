@@ -26,6 +26,8 @@ def owner_to_json(owner: Owner) -> dict:
         "id": str(owner.id.value),
         "email": owner.email.value,
         "nickname": owner.nickname,
+        "full_name": owner.full_name,
+        "handle": owner.handle,
         "profile_image_key": owner.profile_image_key.value
         if owner.profile_image_key
         else None,
