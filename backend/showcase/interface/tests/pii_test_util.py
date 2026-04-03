@@ -28,15 +28,20 @@ def create_owner_profile(
     owner_id: UUID,
     nickname: str,
     account_email: str,
+    legal_full_name: str = "テスト本名",
+    handle: str | None = None,
     created_at=None,
     profile_image_key=None,
 ):
     if created_at is None:
         created_at = datetime.now(timezone.utc)
+    h = handle if handle is not None else f"h_{owner_id.hex[:20]}"
     return OwnerProfile.objects.create(
         id=owner_id,
         user=user,
         nickname=nickname,
+        handle=h,
+        full_name=encrypt_pii(legal_full_name.strip()),
         pii_email_ciphertext=encrypt_pii(Email.parse(account_email).value),
         profile_image_key=profile_image_key,
         created_at=created_at,

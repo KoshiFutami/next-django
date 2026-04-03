@@ -20,7 +20,12 @@ from showcase.infrastructure.django_repositories import (
 
 @pytest.mark.django_db
 def test_owner_roundtrip():
-    owner = Owner.register(email=Email.parse("a@example.com"), nickname="太郎")
+    owner = Owner.register(
+        email=Email.parse("a@example.com"),
+        nickname="太郎",
+        full_name="本名A",
+        handle="roundtrip_h",
+    )
     repos = DjangoOwnerRepository()
     repos.save(owner)
     got = repos.get_by_id(owner.id)
@@ -36,7 +41,12 @@ def test_owner_roundtrip():
 
 @pytest.mark.django_db
 def test_register_with_password_roundtrip():
-    owner = Owner.register(email=Email.parse("reg@example.com"), nickname="登録")
+    owner = Owner.register(
+        email=Email.parse("reg@example.com"),
+        nickname="登録",
+        full_name="登録本名",
+        handle="reg_round_h",
+    )
     repos = DjangoOwnerRepository()
     assert repos.is_email_registered(Email.parse("reg@example.com")) is False
     repos.register_with_password(owner, "repo_test_pass_9")
@@ -52,10 +62,20 @@ def test_register_with_password_roundtrip():
 
 @pytest.mark.django_db
 def test_register_with_password_duplicate_raises():
-    owner = Owner.register(email=Email.parse("twice@example.com"), nickname="A")
+    owner = Owner.register(
+        email=Email.parse("twice@example.com"),
+        nickname="A",
+        full_name="氏名A",
+        handle="twice_h_a",
+    )
     repos = DjangoOwnerRepository()
     repos.register_with_password(owner, "dup_test_pass_9")
-    other = Owner.register(email=Email.parse("twice@example.com"), nickname="B")
+    other = Owner.register(
+        email=Email.parse("twice@example.com"),
+        nickname="B",
+        full_name="氏名B",
+        handle="twice_h_b",
+    )
     with pytest.raises(EmailAlreadyRegisteredError):
         repos.register_with_password(other, "dup_test_pass_9b")
 
@@ -65,14 +85,14 @@ def test_owner_full_name_handle_roundtrip_and_is_handle_taken():
     owner = Owner.register(
         email=Email.parse("handle_r@example.com"),
         nickname="nick",
-        full_name="本名",
+        full_name="リポジトリ本名",
         handle="repo_handle_9",
     )
     repos = DjangoOwnerRepository()
     repos.register_with_password(owner, "handle_repo_pass_9")
     got = repos.get_by_email(Email.parse("handle_r@example.com"))
     assert got is not None
-    assert got.full_name == "本名"
+    assert got.full_name == "リポジトリ本名"
     assert got.handle == "repo_handle_9"
     assert repos.is_handle_taken("repo_handle_9") is True
     assert repos.is_handle_taken("repo_handle_9", exclude_owner_id=owner.id) is False
@@ -84,7 +104,12 @@ def test_breed_and_dog_roundtrip():
     breed_repos = DjangoBreedRepository()
     breed_repos.save(breed)
 
-    owner = Owner.register(email=Email.parse("dogowner@example.com"), nickname="花子")
+    owner = Owner.register(
+        email=Email.parse("dogowner@example.com"),
+        nickname="花子",
+        full_name="花子本名",
+        handle="dog_owner_h",
+    )
     DjangoOwnerRepository().save(owner)
 
     dog = Dog(
@@ -121,8 +146,18 @@ def test_dog_get_by_id_for_owner_wrong_owner_returns_none():
     breed = Breed.create(code=1, name="柴犬", sort_order=0)
     DjangoBreedRepository().save(breed)
 
-    owner_a = Owner.register(email=Email.parse("a@example.com"), nickname="A")
-    owner_b = Owner.register(email=Email.parse("b@example.com"), nickname="B")
+    owner_a = Owner.register(
+        email=Email.parse("a@example.com"),
+        nickname="A",
+        full_name="氏名A",
+        handle="wrong_own_a",
+    )
+    owner_b = Owner.register(
+        email=Email.parse("b@example.com"),
+        nickname="B",
+        full_name="氏名B",
+        handle="wrong_own_b",
+    )
     DjangoOwnerRepository().save(owner_a)
     DjangoOwnerRepository().save(owner_b)
 

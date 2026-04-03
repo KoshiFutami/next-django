@@ -18,6 +18,8 @@ def test_dogs_post_with_bearer_token_uses_registered_owner():
                 "email": "dogowner_jwt@example.com",
                 "password": password,
                 "nickname": "JWT飼い主",
+                "full_name": "JWT飼い主本名",
+                "handle": "jwt_dog_owner_h",
             }
         ),
         content_type="application/json",

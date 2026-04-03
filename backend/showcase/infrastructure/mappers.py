@@ -20,12 +20,29 @@ def _owner_email_from_row(row: OwnerProfileRow) -> Email:
     return Email.parse(row.user.email or row.user.username)
 
 
+def _owner_full_name_from_row(row: OwnerProfileRow) -> str:
+    raw = (getattr(row, "full_name", None) or "").strip()
+    if not raw:
+        return ""
+    try:
+        return pii_crypto.decrypt_pii(raw)
+    except Exception:
+        return ""
+
+
+def _full_name_cipher_for_row(owner: Owner) -> str:
+    fn = (owner.full_name or "").strip()
+    if not fn:
+        raise ValueError("Owner.full_name must be non-empty for persistence")
+    return pii_crypto.encrypt_pii(fn)
+
+
 def owner_profile_to_domain(row: OwnerProfileRow) -> Owner:
     return Owner(
         id=OwnerId(value=row.id),
         email=_owner_email_from_row(row),
         nickname=row.nickname,
-        full_name=row.full_name or "",
+        full_name=_owner_full_name_from_row(row),
         handle=row.handle,
         profile_image_key=ProfileImageKey.parse(row.profile_image_key)
         if row.profile_image_key
@@ -68,7 +85,7 @@ def create_owner_with_password(owner: Owner, password: str) -> None:
         id=owner.id.value,
         user=user,
         nickname=owner.nickname,
-        full_name=owner.full_name,
+        full_name=_full_name_cipher_for_row(owner),
         handle=owner.handle,
         pii_email_ciphertext=pii_crypto.encrypt_pii(owner.email.value),
         profile_image_key=owner.profile_image_key.value
@@ -93,7 +110,7 @@ def persist_owner(owner: Owner) -> None:
         defaults={
             "user": user,
             "nickname": owner.nickname,
-            "full_name": owner.full_name,
+            "full_name": _full_name_cipher_for_row(owner),
             "handle": owner.handle,
             "pii_email_ciphertext": pii_crypto.encrypt_pii(owner.email.value),
             "profile_image_key": owner.profile_image_key.value

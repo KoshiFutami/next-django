@@ -1,7 +1,7 @@
 import pytest
 
 from showcase.domain.exceptions import DomainValidationError
-from showcase.domain.handle import parse_optional_handle
+from showcase.domain.handle import parse_handle, parse_optional_handle
 
 
 def test_parse_optional_handle_strips_at_and_lowercases():
@@ -31,3 +31,13 @@ def test_parse_optional_handle_rejects_reserved():
 
 def test_parse_optional_handle_accepts_valid():
     assert parse_optional_handle("pochi_2024") == "pochi_2024"
+
+
+@pytest.mark.parametrize("raw", [None, "", "   ", "@", "  @  "])
+def test_parse_handle_rejects_empty(raw):
+    with pytest.raises(DomainValidationError, match="handle_empty"):
+        parse_handle(raw)
+
+
+def test_parse_handle_same_as_optional_when_present():
+    assert parse_handle("  @Ab_C  ") == "ab_c"

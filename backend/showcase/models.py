@@ -14,18 +14,13 @@ class OwnerProfile(models.Model):
         related_name="owner_profile",
     )
     nickname = models.CharField(max_length=64)
-    full_name = models.CharField(
-        max_length=128,
-        blank=True,
-        default="",
-        help_text="本名（任意）",
+    full_name = models.TextField(
+        help_text="本名の Fernet 暗号文（平文はアプリ内のみ）",
     )
     handle = models.CharField(
         max_length=30,
         unique=True,
-        null=True,
-        blank=True,
-        help_text="公開ハンドル（小文字・@ なし、一意）",
+        help_text="公開ハンドル（小文字・@ なし、一意・必須）",
     )
     pii_email_ciphertext = models.TextField(
         blank=True,

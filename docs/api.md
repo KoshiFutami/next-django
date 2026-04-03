@@ -19,11 +19,11 @@ Django `User` + `OwnerProfile` と整合させる。
 
 | メソッド | パス | 認証 | 説明 |
 |---------|------|------|------|
-| POST | `/auth/register/` | 不要 | メール・パスワード・ニックネームで登録。任意で `full_name`（本名）・`handle`（公開用 @ なし・一意） |
+| POST | `/auth/register/` | 不要 | メール・パスワード・ニックネーム・**`full_name`（本名・必須・DB では暗号化）**・**`handle`（公開用・必須・@ なし・一意）**で登録 |
 | POST | `/auth/login/` | 不要 | ログイン、アクセストークン（＋必要ならリフレッシュ）を返す |
 | POST | `/auth/logout/` | 要 | トークン失効（方式による） |
 | GET | `/auth/me/` | 要 | 現在の Owner（`email`, `nickname`, `full_name`, `handle`, `profile_image_key` 等） |
-| PATCH | `/auth/me/` | 要 | `nickname`, `full_name`, `handle`, `profile_image_key` の更新。ハンドル重複は 409 |
+| PATCH | `/auth/me/` | 要 | `nickname`, `full_name`, `handle`, `profile_image_key` の更新（`full_name` / `handle` を送る場合は空不可）。ハンドル重複は 409 |
 
 ---
 

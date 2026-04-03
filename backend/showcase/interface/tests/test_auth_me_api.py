@@ -5,6 +5,7 @@ import pytest
 from django.test import Client
 from django.test.utils import override_settings
 
+from showcase.infrastructure import pii_crypto
 from showcase.interface.tests.pii_test_util import (
     create_owner_profile,
     create_user,
@@ -35,8 +36,8 @@ def test_auth_me_get_returns_profile():
     assert data["id"] == str(STUB_OWNER_ID)
     assert data["email"] == "me@example.com"
     assert data["nickname"] == "スタブ"
-    assert data["full_name"] == ""
-    assert data["handle"] is None
+    assert data["full_name"] == "テスト本名"
+    assert data["handle"] == "h_00000000000000000000"
     assert data["profile_image_key"] is None
     assert "created_at" in data
 
@@ -86,7 +87,7 @@ def test_auth_me_patch_updates_full_name_and_handle():
     assert data["full_name"] == "山田 花子"
     assert data["handle"] == "hanako_y"
     row = OwnerProfileRow.objects.get(pk=STUB_OWNER_ID)
-    assert row.full_name == "山田 花子"
+    assert pii_crypto.decrypt_pii(row.full_name) == "山田 花子"
     assert row.handle == "hanako_y"
 
 
@@ -104,6 +105,7 @@ def test_auth_me_patch_duplicate_handle_returns_409():
                     "email": email,
                     "password": "dup_handle_pass_9",
                     "nickname": nick,
+                    "full_name": f"{nick}本名",
                     "handle": handle,
                 }
             ),

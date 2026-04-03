@@ -1,4 +1,4 @@
-"""メール・犬名などの個人情報をアプリ層で暗号化する（Fernet）。"""
+"""メール・本名などの個人情報をアプリ層で暗号化する（Fernet）。"""
 
 from __future__ import annotations
 

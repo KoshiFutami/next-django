@@ -25,12 +25,13 @@ def _normalize_patch(raw: dict) -> dict:
             else:
                 patch[key] = ProfileImageKey.parse(str(val))
         elif key == "full_name":
-            patch[key] = "" if val is None else str(val)
+            if val is None or (isinstance(val, str) and not val.strip()):
+                raise ValueError("full_name must not be null or empty")
+            patch[key] = str(val)
         elif key == "handle":
-            if val is None or val == "":
-                patch[key] = None
-            else:
-                patch[key] = str(val)
+            if val is None or (isinstance(val, str) and not val.strip()):
+                raise ValueError("handle must not be null or empty")
+            patch[key] = str(val)
     return patch
 
 
@@ -46,7 +47,7 @@ class UpdateMyProfileUseCase:
         if not normalized:
             return owner
         updated = owner.merge_patch(normalized)
-        if updated.handle != owner.handle and updated.handle is not None:
+        if updated.handle != owner.handle:
             if self.owner_repository.is_handle_taken(
                 updated.handle, exclude_owner_id=owner_id
             ):

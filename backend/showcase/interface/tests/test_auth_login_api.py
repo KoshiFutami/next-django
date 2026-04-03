@@ -19,6 +19,8 @@ def test_auth_login_post_returns_tokens_and_owner():
                 "email": "loginuser@example.com",
                 "password": password,
                 "nickname": "ログイン太郎",
+                "full_name": "ログイン太郎本名",
+                "handle": "login_user_h",
             }
         ),
         content_type="application/json",
@@ -50,6 +52,8 @@ def test_auth_login_wrong_password_returns_401():
                 "email": "wrongpw@example.com",
                 "password": password,
                 "nickname": "ユーザー",
+                "full_name": "ユーザー本名",
+                "handle": "wrongpw_h",
             }
         ),
         content_type="application/json",

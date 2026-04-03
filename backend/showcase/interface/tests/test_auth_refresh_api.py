@@ -15,6 +15,8 @@ def test_auth_refresh_post_returns_new_access():
                 "email": "refreshflow@example.com",
                 "password": password,
                 "nickname": "更新ユーザー",
+                "full_name": "更新ユーザー本名",
+                "handle": "refresh_user_h",
             }
         ),
         content_type="application/json",

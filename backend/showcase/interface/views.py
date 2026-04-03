@@ -148,7 +148,7 @@ def auth_me(request):
 
 
 def post_auth_register(request):
-    """`/api/auth/register/` の POST。メール・パスワード・ニックネームで Owner を新規作成。"""
+    """`/api/auth/register/` の POST。メール・パスワード・ニックネーム・本名・ハンドルで Owner を新規作成。"""
     try:
         payload = parse_request_payload(request)
         use_case = RegisterOwnerUseCase(DjangoOwnerRepository())

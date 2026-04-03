@@ -15,6 +15,8 @@ def test_auth_logout_blacklists_refresh_so_refresh_endpoint_fails():
                 "email": "logoutflow@example.com",
                 "password": password,
                 "nickname": "ログアウト太郎",
+                "full_name": "ログアウト太郎本名",
+                "handle": "logout_flow_h",
             }
         ),
         content_type="application/json",
@@ -70,6 +72,8 @@ def test_auth_logout_mismatched_refresh_returns_403():
                 "email": "logout_a@example.com",
                 "password": pw_a,
                 "nickname": "A",
+                "full_name": "A本名",
+                "handle": "logout_a_h",
             }
         ),
         content_type="application/json",
@@ -81,6 +85,8 @@ def test_auth_logout_mismatched_refresh_returns_403():
                 "email": "logout_b@example.com",
                 "password": pw_b,
                 "nickname": "B",
+                "full_name": "B本名",
+                "handle": "logout_b_h",
             }
         ),
         content_type="application/json",
@@ -118,6 +124,8 @@ def test_auth_logout_missing_refresh_returns_400():
                 "email": "missrefresh@example.com",
                 "password": "miss_pass_9",
                 "nickname": "M",
+                "full_name": "M本名",
+                "handle": "miss_refresh_h",
             }
         ),
         content_type="application/json",

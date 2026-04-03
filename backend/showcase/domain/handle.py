@@ -50,3 +50,11 @@ def parse_optional_handle(raw: str | None) -> str | None:
     if normalized in _RESERVED:
         raise DomainValidationError("handle_reserved")
     return normalized
+
+
+def parse_handle(raw: str | None) -> str:
+    """必須ハンドル。空・None は handle_empty。形式は `parse_optional_handle` と同じ。"""
+    normalized = parse_optional_handle(raw)
+    if normalized is None:
+        raise DomainValidationError("handle_empty")
+    return normalized

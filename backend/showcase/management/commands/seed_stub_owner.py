@@ -34,6 +34,8 @@ class Command(BaseCommand):
             defaults={
                 "user": user,
                 "nickname": nickname,
+                "handle": "showcase_stub",
+                "full_name": encrypt_pii("スタブオーナー"),
                 "pii_email_ciphertext": encrypt_pii(email_vo.value),
                 "profile_image_key": None,
                 "created_at": datetime.now(timezone.utc),
