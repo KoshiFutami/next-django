@@ -1,79 +1,43 @@
-# next-django — エージェント向けメモ
+# next-django — エージェント向け（ポインタ）
 
-このリポジトリは **Django（backend）+ Next.js（frontend）** のモノレポ。API は `/api/` 配下。
+モノレポ: **Django（`backend/showcase`）+ Next.js（`frontend`）**。HTTP API は `/api/` 配下。
 
-## 構成
+詳細な「現状説明」やスタイルの重複は書かない。**コード・テスト・ADR・リンター設定が真実**。[ポインタ型 AGENTS の意図](https://nyosegawa.com/posts/harness-engineering-best-practices-2026/#3%3A-agents.md-%2F-claude.md%E3%82%92%E3%83%9D%E3%82%A4%E3%83%B3%E3%82%BF%E3%81%A8%E3%81%97%E3%81%A6%E8%A8%AD%E8%A8%88%E3%81%99%E3%82%8B)
 
-- `backend/` — Django 5 + DRF 利用可。アプリ本体は `showcase/`
-- `frontend/` — Next.js（App Router）
-- `docker-compose.yml` — `db`（Postgres）、`backend`、`frontend`
+## まず読む
 
-## アーキテクチャ（薄い DDD）
+- **設計の「なぜ」**: [docs/adr/](docs/adr/)（有効は `Accepted`。[薄い DDD](docs/adr/0002-thin-ddd-for-showcase-backend.md)）
+- **Python 品質・Claude Hooks**: [ADR 0003](docs/adr/0003-python-quality-via-hooks-and-ci.md)
+- **エントリポイント方針（本ファイルの短さ）**: [ADR 0004](docs/adr/0004-agent-entrypoints-as-pointers.md)
+- **API 一覧**: [docs/api.md](docs/api.md) / Postman は [docs/postman/](docs/postman/)
 
-- **リポジトリ境界**: `showcase/domain/repositories.py`（Protocol）→ `showcase/infrastructure/django_repositories.py`（実装）
-- **ユースケース**: `showcase/application/`（オーケストレーションを薄く）
-- **HTTP 境界**: `showcase/interface/`（views、urls、serializers 的な JSON 整形、`responses.py`）
-- **ドメイン**: `showcase/domain/` — ルールが増えたところから厚くする。最初からフルDDDにしない
+## ルーティング（よく使うコマンド）
 
-ORM モデルは `showcase/models.py`。
+| 目的 | コマンド |
+|------|----------|
+| 起動 | `make up` |
+| ログ | `make logs` / `docker compose logs -f backend` |
+| テスト | `make test` |
+| DB | `make psql` / `make migrate` |
+| Backend lint | `pip install -r backend/requirements-dev.txt` → `make lint-backend` |
+| pre-commit | `make pre-commit-install` |
 
-## アーキテクチャ意思決定（ADR）
+シード（コンテナ起動後）: `docker compose exec backend python manage.py seed_breeds` / `seed_stub_owner`
 
-設計の「なぜそうしたか」は [docs/adr/](docs/adr/) に記録する。
+## レイヤー（置き場所だけ）
 
-## Python 品質（Ruff / pre-commit / Claude Code）
+`showcase/` のディレクトリと ADR 0002 が境界の真実。**domain** → **application** → **infrastructure** → **interface**。ORM は `showcase/models.py`。
 
-- **Ruff**: `backend/pyproject.toml`。開発用依存は `backend/requirements-dev.txt`。
-- **コミット前**: ルートで `pip install pre-commit && make pre-commit-install` → コミット時に Ruff が走る（詳細は [ADR 0003](docs/adr/0003-python-quality-via-hooks-and-ci.md)）。
-- **手動**: `pip install -r backend/requirements-dev.txt` のうえ `make lint-backend`。
-- **Claude Code**: `.claude/settings.json` の PostToolUse で同じ Ruff を実行（ホストに `ruff` が必要）。PreToolUse で `pre-protect-config.sh` により Ruff / pre-commit / 関連 CI・フック設定の編集をブロック（設定変更はエディタや通常の PR で）。
+## 禁止・落とし穴
 
-## ローカル運用
+- リンター・pre-commit・関連 CI・`.claude` フックを弱めて赤を消さない（Claude Code は PreToolUse でブロック。変更はエディタ・通常 PR）。
+- `OwnerProfile matching query does not exist` → 先に `seed_stub_owner`（スタブ ID は `config/settings.py`）。
 
-- 起動: `make up`
-- backend ログ: `docker compose logs -f backend`（または `make logs` で全体）
-- DB: `make psql`（コンテナ内 `psql`）
-- マイグレーション: `make migrate`
-- テスト: `make test`（コンテナ内 `pytest`）
+## PR / スキル / ルール
 
-コード変更は backend がボリュームマウントされているため、通常 **コンテナ再起動不要**（依存追加や Dockerfile 変更時は再ビルド）。
+- `gh` + `make pr` / `make push`。手順: [.cursor/skills/github-pr/SKILL.md](.cursor/skills/github-pr/SKILL.md)
+- 開発フロー全体: [.cursor/skills/next-django-dev/SKILL.md](.cursor/skills/next-django-dev/SKILL.md)
+- コミットメッセージは **日本語**: [.cursor/commands/commit.md](.cursor/commands/commit.md)
+- Python の細目: **`.cursor/rules/*.mdc`**（配置されていれば。なければ既存コードに合わせる）
 
-## データ投入（管理コマンド）
-
-コンテナ起動後、backend 内で実行:
-
-- `python manage.py seed_breeds` — 犬種マスタ
-- `python manage.py seed_stub_owner` — スタブ Owner（`SHOWCASE_STUB_OWNER_ID` に対応する `OwnerProfile`）
-
-例: `docker compose exec backend python manage.py seed_stub_owner`
-
-## 開発用スタブ認証
-
-`config/settings.py` 参照:
-
-- `SHOWCASE_STUB_OWNER_ID` — 現在の Owner として扱う UUID（環境変数で上書き可）
-- `SHOWCASE_STUB_OWNER_EMAIL` — スタブ用ユーザーのメール（`seed_stub_owner` で使用）
-
-犬の登録などで `OwnerProfile matching query does not exist` が出たら、先に `seed_stub_owner` を実行する。
-
-## API / ドキュメント
-
-- 人向け一覧: `docs/api.md`
-- Postman: `docs/postman/`（`next-django-mvp.postman_collection.json` など）
-
-## GitHub / PR
-
-- [GitHub CLI](https://cli.github.com/)（`gh`）を入れ、`gh auth login` 済みであること
-- ブランチを push したあと: `make pr`（`gh pr create --fill`）。下書きは `make pr-draft`、ブラウザは `make pr-web`
-- ローカル: `make commit`（ステージ済みのみ `git commit`）、`make push`（`git push -u origin HEAD`）
-- コミットメッセージは **日本語**（詳細は `.cursor/commands/commit.md`）
-- `gh` 利用: `make review`（`gh pr view`）、`make approve`（`gh pr review --approve`）
-- PR の本文テンプレート: `.github/pull_request_template.md`
-- Cursor 用コマンド定義: `.cursor/commands/commit.md` など（4 ファイル）
-- エージェント向け手順: `.cursor/skills/github-pr/SKILL.md`
-
-## 細かいコーディング規約
-
-エディタ・エージェント向けの詳細ルールは **`.cursor/rules/`** の `.mdc` に置く。ここは要約のみ。
-
-- Python の public な関数・メソッドには、原則として docstring を付ける（目的・戻り値・必要なら例外）。
+**Claude Code** 利用時はルートの [CLAUDE.md](CLAUDE.md) も読む。
