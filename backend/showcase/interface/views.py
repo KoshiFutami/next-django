@@ -9,15 +9,17 @@ from django.views.decorators.csrf import csrf_exempt
 from showcase.application.create_my_dog import CreateMyDogUseCase
 from showcase.application.delete_my_dog import DeleteMyDogUseCase
 from showcase.application.get_dog import GetDogUseCase
+from showcase.application.get_my_profile import GetMyProfileUseCase
 from showcase.application.list_all_dogs import ListAllDogsUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
 from showcase.application.update_my_dog import UpdateMyDogUseCase
+from showcase.application.update_my_profile import UpdateMyProfileUseCase
 from showcase.domain.exceptions import DomainValidationError
-from showcase.infrastructure import DjangoBreedRepository
+from showcase.infrastructure import DjangoBreedRepository, DjangoOwnerRepository
 from showcase.infrastructure.django_repositories import DjangoDogRepository
 from showcase.interface.auth import get_current_owner_id
 from showcase.interface.responses import json_response
-from showcase.interface.serializers import breed_to_json, dog_to_json
+from showcase.interface.serializers import breed_to_json, dog_to_json, owner_to_json
 
 
 def parse_request_payload(request) -> dict:
@@ -47,6 +49,58 @@ def health(_request):
             status=HTTPStatus.SERVICE_UNAVAILABLE,
         )
     return json_response({"status": "ok"})
+
+
+# Auth / Owner profile（現状はスタブ Owner ID。JWT 導入後に認証と接続）
+def get_auth_me(request):
+    owner_id = get_current_owner_id(request)
+    use_case = GetMyProfileUseCase(DjangoOwnerRepository())
+    owner = use_case.execute(owner_id)
+    if owner is None:
+        return json_response(
+            {"code": "not_found", "message": "Owner not found"},
+            status=HTTPStatus.NOT_FOUND,
+        )
+    return json_response(owner_to_json(owner))
+
+
+def patch_auth_me(request):
+    try:
+        owner_id = get_current_owner_id(request)
+        payload = parse_request_payload(request)
+        use_case = UpdateMyProfileUseCase(DjangoOwnerRepository())
+        owner = use_case.execute(owner_id, payload)
+        if owner is None:
+            return json_response(
+                {"code": "not_found", "message": "Owner not found"},
+                status=HTTPStatus.NOT_FOUND,
+            )
+        return json_response(owner_to_json(owner))
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except DomainValidationError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_me(request):
+    """`/api/auth/me/` の GET / PATCH。現在のオーナープロフィール。"""
+    match request.method:
+        case "GET":
+            return get_auth_me(request)
+        case "PATCH":
+            return patch_auth_me(request)
+        case _:
+            return json_response(
+                {"code": "method_not_allowed", "message": "Method not allowed"},
+                status=HTTPStatus.METHOD_NOT_ALLOWED,
+            )
 
 
 # Dogs

@@ -2,6 +2,19 @@
 
 from showcase.domain.breed import Breed
 from showcase.domain.dog import Dog
+from showcase.domain.owner import Owner
+
+
+def owner_to_json(owner: Owner) -> dict:
+    return {
+        "id": str(owner.id.value),
+        "email": owner.email.value,
+        "nickname": owner.nickname,
+        "profile_image_key": owner.profile_image_key.value
+        if owner.profile_image_key
+        else None,
+        "created_at": owner.created_at.isoformat(),
+    }
 
 
 def dog_to_json(dog: Dog) -> dict:
