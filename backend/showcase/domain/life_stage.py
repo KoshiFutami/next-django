@@ -2,8 +2,10 @@
 
 from enum import Enum
 
+
 class LifeStage(Enum):
     """犬のライフステージを表すEnum（表示名付き）。"""
+
     NOT_YET_BORN = ("not_yet_born", "未誕生")
     NEWBORN = ("newborn", "新生児")
     YOUNG = ("young", "若犬")

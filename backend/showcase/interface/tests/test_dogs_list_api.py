@@ -17,8 +17,12 @@ STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_list_returns_only_stub_owner_dogs():
     User = get_user_model()
-    u_stub = User.objects.create_user(username="stub@example.com", email="stub@example.com", password="x")
-    u_other = User.objects.create_user(username="other@example.com", email="other@example.com", password="x")
+    u_stub = User.objects.create_user(
+        username="stub@example.com", email="stub@example.com", password="x"
+    )
+    u_other = User.objects.create_user(
+        username="other@example.com", email="other@example.com", password="x"
+    )
 
     OwnerProfileRow.objects.create(
         id=STUB_OWNER_ID,
@@ -72,7 +76,9 @@ def test_dogs_list_returns_only_stub_owner_dogs():
 @pytest.mark.django_db
 def test_dogs_list_empty_when_no_dogs():
     User = get_user_model()
-    u = User.objects.create_user(username="empty@example.com", email="empty@example.com", password="x")
+    u = User.objects.create_user(
+        username="empty@example.com", email="empty@example.com", password="x"
+    )
     OwnerProfileRow.objects.create(
         id=STUB_OWNER_ID,
         user=u,

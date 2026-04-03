@@ -13,9 +13,12 @@ def dog_to_json(dog: Dog) -> dict:
         "color": dog.color,
         "gender": dog.gender,
         "breed_code": dog.breed_code,
-        "profile_image_key": dog.profile_image_key.value if dog.profile_image_key else None,
+        "profile_image_key": dog.profile_image_key.value
+        if dog.profile_image_key
+        else None,
         "created_at": dog.created_at.isoformat(),
     }
+
 
 def breed_to_json(breed: Breed) -> dict:
     return {
