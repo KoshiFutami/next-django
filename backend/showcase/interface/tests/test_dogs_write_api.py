@@ -81,3 +81,17 @@ def test_dogs_post_invalid_birth_date_returns_400():
     )
     assert res.status_code == 400
     assert res.json()["code"] == "bad_request"
+
+
+@pytest.mark.django_db
+@override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
+def test_dogs_post_invalid_json_returns_400():
+    _stub_owner_and_breed()
+    client = Client()
+    res = client.post(
+        "/api/dogs/",
+        data='{"name": "ポチ",',
+        content_type="application/json",
+    )
+    assert res.status_code == 400
+    assert res.json()["code"] == "bad_request"
