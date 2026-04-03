@@ -1,8 +1,9 @@
 import pytest
-from django.test import Client
 from django.db import DatabaseError
+from django.test import Client
 
 from showcase.interface import views
+
 
 @pytest.mark.django_db
 def test_health_returns_ok():

@@ -10,6 +10,10 @@ description: next-django モノレポの開発手順・薄いDDD・Docker/Makefi
 - このリポジトリで機能追加・バグ修正・リファクタをするとき
 - レイヤー配置や「どこに何を書くか」を揃えたいとき
 
+エントリの短いポインタは [AGENTS.md](../../../AGENTS.md)。Claude Code は [CLAUDE.md](../../../CLAUDE.md) も（[ADR 0004](../../../docs/adr/0004-agent-entrypoints-as-pointers.md)）。
+
+作業の進め方（計画→実行・小さな縦割り・`make test` で完了）は [ADR 0005](../../../docs/adr/0005-plan-then-execute-with-tests.md)。
+
 ## アーキテクチャ（薄い DDD）
 
 1. **永続化の抽象**: `backend/showcase/domain/repositories.py`（`Protocol`）
@@ -19,6 +23,13 @@ description: next-django モノレポの開発手順・薄いDDD・Docker/Makefi
 5. **ドメイン**: `backend/showcase/domain/` — ルールが複雑になったら factory メソッド・値オブジェクト・例外を足す
 
 View にビジネスロジックを溜めない。ORM を直接 view から触らない方針を基本とする。
+
+## Python lint（Ruff）
+
+- 初回: `pip install -r backend/requirements-dev.txt`
+- 手動チェック: ルートで `make lint-backend`
+- コミットフック: `pip install pre-commit` → `make pre-commit-install`（[ADR 0003](../../../docs/adr/0003-python-quality-via-hooks-and-ci.md)）
+- Claude Code 利用時は `.claude/hooks/post-ruff.sh` が PostToolUse で動く（`ruff` が PATH にあること）。`pre-protect-config.sh` が PreToolUse で Ruff / pre-commit / 関連 CI・フック設定の編集をブロックする
 
 ## Docker / Make
 

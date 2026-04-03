@@ -1,12 +1,12 @@
-import pytest
-from uuid import uuid4
 from datetime import date
+from uuid import uuid4
+
+import pytest
 
 from showcase.domain.breed import Breed
 from showcase.domain.dog import Dog
 from showcase.domain.email import Email
 from showcase.domain.owner import Owner
-from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
 from showcase.infrastructure.django_repositories import (
     DjangoBreedRepository,

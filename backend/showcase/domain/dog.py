@@ -3,9 +3,9 @@ from datetime import date, datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from showcase.domain.exceptions import DomainValidationError
+from showcase.domain.life_stage import LifeStage
 from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
-from showcase.domain.life_stage import LifeStage
 
 
 def _utc_now() -> datetime:
@@ -37,9 +37,19 @@ class Dog:
             return LifeStage.YOUNG
         return LifeStage.ADULT
 
-
     @classmethod
-    def register(cls, *, name: str, birth_date: date, weight: float, color: str, gender: str, owner_id: OwnerId, breed_code: int, profile_image_key: ProfileImageKey | None = None) -> "Dog":
+    def register(
+        cls,
+        *,
+        name: str,
+        birth_date: date,
+        weight: float,
+        color: str,
+        gender: str,
+        owner_id: OwnerId,
+        breed_code: int,
+        profile_image_key: ProfileImageKey | None = None,
+    ) -> "Dog":
         if not name:
             raise DomainValidationError("name_empty")
         if len(name) > 128:
@@ -58,7 +68,7 @@ class Dog:
             raise DomainValidationError("breed_code_negative")
         if profile_image_key and len(profile_image_key.value) > 512:
             raise DomainValidationError("profile_image_key_too_long")
-        
+
         return cls(
             id=uuid4(),
             name=name,

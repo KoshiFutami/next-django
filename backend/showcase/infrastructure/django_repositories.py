@@ -62,7 +62,9 @@ class DjangoDogRepository:
         return mappers.dog_row_to_domain(row)
 
     def list_by_owner(self, owner_id: OwnerId) -> list[Dog]:
-        qs = DogRow.objects.select_related("breed", "owner").filter(owner_id=owner_id.value)
+        qs = DogRow.objects.select_related("breed", "owner").filter(
+            owner_id=owner_id.value
+        )
         return [mappers.dog_row_to_domain(r) for r in qs]
 
     def save(self, dog: Dog) -> None:

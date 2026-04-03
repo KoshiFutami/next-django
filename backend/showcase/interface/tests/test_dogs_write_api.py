@@ -16,7 +16,9 @@ STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 def _stub_owner_and_breed():
     User = get_user_model()
-    u = User.objects.create_user(username="stub-w@example.com", email="stub-w@example.com", password="x")
+    u = User.objects.create_user(
+        username="stub-w@example.com", email="stub-w@example.com", password="x"
+    )
     OwnerProfileRow.objects.create(
         id=STUB_OWNER_ID,
         user=u,

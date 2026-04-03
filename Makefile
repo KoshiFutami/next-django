@@ -3,6 +3,7 @@ DC := docker compose
 .PHONY: help up down restart ps logs build pull \
 	bash-backend bash-db psql \
 	migrate makemigrations test \
+	lint-backend pre-commit-install \
 	pr pr-draft pr-web \
 	commit review approve push
 
@@ -27,6 +28,8 @@ help:
 	@echo "  migrate       Run Django migrations"
 	@echo "  makemigrations Create Django migration files"
 	@echo "  test          Run backend pytest"
+	@echo "  lint-backend  Ruff (check + format --check) on backend/ (要: pip install -r backend/requirements-dev.txt)"
+	@echo "  pre-commit-install  pip install pre-commit && pre-commit install（ルート）"
 	@echo ""
 	@echo "Git / GitHub:"
 	@echo "  commit        git commit (staged changes required)"
@@ -75,6 +78,14 @@ makemigrations:
 
 test:
 	$(DC) exec backend pytest -q
+
+lint-backend:
+	@command -v ruff >/dev/null 2>&1 || (echo "ruff が必要です: pip install -r backend/requirements-dev.txt" && false)
+	cd backend && ruff check . && ruff format --check .
+
+pre-commit-install:
+	python3 -m pip install -q pre-commit
+	python3 -m pre_commit install
 
 pr:
 	@command -v gh >/dev/null || (echo "gh が必要です: https://cli.github.com/ （例: brew install gh）" && false)

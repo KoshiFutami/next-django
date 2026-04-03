@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -16,42 +15,83 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Breed',
+            name="Breed",
             fields=[
-                ('code', models.PositiveIntegerField(primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=255)),
-                ('sort_order', models.PositiveIntegerField(default=0)),
+                (
+                    "code",
+                    models.PositiveIntegerField(primary_key=True, serialize=False),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("sort_order", models.PositiveIntegerField(default=0)),
             ],
             options={
-                'ordering': ['sort_order', 'code'],
+                "ordering": ["sort_order", "code"],
             },
         ),
         migrations.CreateModel(
-            name='OwnerProfile',
+            name="OwnerProfile",
             fields=[
-                ('id', models.UUIDField(editable=False, primary_key=True, serialize=False)),
-                ('nickname', models.CharField(max_length=64)),
-                ('profile_image_key', models.CharField(blank=True, max_length=512, null=True)),
-                ('created_at', models.DateTimeField()),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='owner_profile', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.UUIDField(editable=False, primary_key=True, serialize=False),
+                ),
+                ("nickname", models.CharField(max_length=64)),
+                (
+                    "profile_image_key",
+                    models.CharField(blank=True, max_length=512, null=True),
+                ),
+                ("created_at", models.DateTimeField()),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="owner_profile",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Dog',
+            name="Dog",
             fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('name', models.CharField(max_length=128)),
-                ('birth_date', models.DateField()),
-                ('weight', models.FloatField()),
-                ('color', models.CharField(max_length=64)),
-                ('gender', models.CharField(max_length=32)),
-                ('profile_image_key', models.CharField(blank=True, max_length=512, null=True)),
-                ('created_at', models.DateTimeField()),
-                ('breed', models.ForeignKey(db_column='breed_code', on_delete=django.db.models.deletion.PROTECT, to='showcase.breed')),
-                ('owner', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='dogs', to='showcase.ownerprofile')),
+                (
+                    "id",
+                    models.UUIDField(
+                        default=uuid.uuid4,
+                        editable=False,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(max_length=128)),
+                ("birth_date", models.DateField()),
+                ("weight", models.FloatField()),
+                ("color", models.CharField(max_length=64)),
+                ("gender", models.CharField(max_length=32)),
+                (
+                    "profile_image_key",
+                    models.CharField(blank=True, max_length=512, null=True),
+                ),
+                ("created_at", models.DateTimeField()),
+                (
+                    "breed",
+                    models.ForeignKey(
+                        db_column="breed_code",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="showcase.breed",
+                    ),
+                ),
+                (
+                    "owner",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="dogs",
+                        to="showcase.ownerprofile",
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-created_at'],
+                "ordering": ["-created_at"],
             },
         ),
     ]

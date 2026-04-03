@@ -14,7 +14,11 @@ class Email:
     def __post_init__(self) -> None:
         if not self.value:
             raise DomainValidationError("email_empty")
-        if "@" not in self.value or self.value.startswith("@") or self.value.endswith("@"):
+        if (
+            "@" not in self.value
+            or self.value.startswith("@")
+            or self.value.endswith("@")
+        ):
             raise DomainValidationError("email_invalid_format")
 
     @classmethod

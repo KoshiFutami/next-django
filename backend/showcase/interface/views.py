@@ -1,15 +1,16 @@
-from http import HTTPStatus
 import json
+from http import HTTPStatus
 
 from django.db import DatabaseError, connection
 from django.views.decorators.csrf import csrf_exempt
+
+from showcase.application.create_dog import CreateDogUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
-from showcase.infrastructure import DjangoBreedRepository
-from showcase.interface.responses import json_response
 from showcase.application.list_my_dogs import ListMyDogsUseCase
+from showcase.infrastructure import DjangoBreedRepository
 from showcase.infrastructure.django_repositories import DjangoDogRepository
 from showcase.interface.auth import get_current_owner_id
-from showcase.application.create_dog import CreateDogUseCase
+from showcase.interface.responses import json_response
 from showcase.interface.serializers import breed_to_json, dog_to_json
 
 
@@ -27,6 +28,7 @@ def parse_request_payload(request) -> dict:
         return payload
     return request.POST.dict()
 
+
 # Health Check
 def health(_request):
     """ヘルスチェックを返す。"""
@@ -39,6 +41,7 @@ def health(_request):
             status=HTTPStatus.SERVICE_UNAVAILABLE,
         )
     return json_response({"status": "ok"})
+
 
 # Dogs
 def dogs_list(request):
@@ -53,6 +56,7 @@ def dogs_list(request):
     dogs = use_case.execute(owner_id)
     return json_response({"items": [dog_to_json(d) for d in dogs]})
 
+
 def dogs_create(request):
     """現在のオーナーに犬を登録する。"""
     try:
@@ -60,10 +64,7 @@ def dogs_create(request):
         use_case = CreateDogUseCase(DjangoDogRepository())
         payload = parse_request_payload(request)
         dog = use_case.execute(owner_id, payload)
-        return json_response(
-            payload=dog_to_json(dog),
-            status=HTTPStatus.CREATED
-        )
+        return json_response(payload=dog_to_json(dog), status=HTTPStatus.CREATED)
     except ValueError as exc:
         return json_response(
             {"code": "bad_request", "message": str(exc)},
@@ -88,6 +89,7 @@ def dogs(request):
         )
     return dogs_create(request)
 
+
 # Breeds
 def breeds_list(request):
     """犬種一覧を返す。"""
@@ -99,4 +101,3 @@ def breeds_list(request):
     use_case = ListBreedsUseCase(DjangoBreedRepository())
     breeds = use_case.execute()
     return json_response({"items": [breed_to_json(b) for b in breeds]})
-
