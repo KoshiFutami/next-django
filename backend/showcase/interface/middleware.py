@@ -1,8 +1,18 @@
-"""API パスでは DEBUG=True でも HTML エラーページを JSON に揃える。"""
+"""API パスでは HTML エラーページを JSON に揃える。
 
+DEBUG=True のときは未処理例外を JSON で返し、メッセージとトレースバックを含める
+（Postman 等で原因調査できるようにする）。DEBUG=False では汎用メッセージのみ。
+"""
+
+import logging
+import traceback
 from http import HTTPStatus
 
+from django.conf import settings
+
 from showcase.interface.responses import json_response
+
+logger = logging.getLogger(__name__)
 
 _API_PREFIX = "/api/"
 
@@ -29,6 +39,26 @@ class ApiJsonErrorMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+
+    def process_exception(self, request, exception):
+        """ビューで捕捉されなかった例外を JSON にする（DEBUG 時は詳細付き）。"""
+        if not request.path.startswith(_API_PREFIX):
+            return None
+        logger.exception("Unhandled exception on %s", request.path)
+        if settings.DEBUG:
+            return json_response(
+                {
+                    "code": "internal_server_error",
+                    "message": str(exception),
+                    "exception": exception.__class__.__name__,
+                    "traceback": traceback.format_exc(),
+                },
+                status=HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+        return json_response(
+            {"code": "internal_server_error", "message": "Internal server error"},
+            status=HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
     def __call__(self, request):
         response = self.get_response(request)
