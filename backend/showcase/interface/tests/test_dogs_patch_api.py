@@ -3,13 +3,15 @@ from datetime import date, datetime, timezone
 from uuid import UUID, uuid4
 
 import pytest
-from django.contrib.auth import get_user_model
 from django.test import Client
 from django.test.utils import override_settings
 
+from showcase.interface.tests.pii_test_util import (
+    create_owner_profile,
+    create_user,
+)
 from showcase.models import Breed as BreedRow
 from showcase.models import Dog as DogRow
-from showcase.models import OwnerProfile as OwnerProfileRow
 
 STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
@@ -17,15 +19,12 @@ STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_patch_updates_name():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="patch@example.com", email="patch@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("patch@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="patch@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
     dog = DogRow.objects.create(
@@ -55,15 +54,12 @@ def test_dogs_patch_updates_name():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_patch_unknown_dog_returns_404():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="p404@example.com", email="p404@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("p404@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="p404@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
 
@@ -80,15 +76,12 @@ def test_dogs_patch_unknown_dog_returns_404():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_patch_invalid_birth_date_returns_400():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="p400@example.com", email="p400@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("p400@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="p400@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
     dog = DogRow.objects.create(
@@ -115,15 +108,12 @@ def test_dogs_patch_invalid_birth_date_returns_400():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_patch_ignores_unknown_json_keys():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="pign@example.com", email="pign@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("pign@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="pign@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
     dog = DogRow.objects.create(
@@ -145,4 +135,6 @@ def test_dogs_patch_ignores_unknown_json_keys():
     )
     assert res.status_code == 200
     assert res.json()["name"] == "新名"
+    dog.refresh_from_db()
     assert dog.owner_id == STUB_OWNER_ID
+    assert dog.name == "新名"

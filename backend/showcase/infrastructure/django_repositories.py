@@ -11,7 +11,7 @@ from showcase.domain.email import Email
 from showcase.domain.exceptions import EmailAlreadyRegisteredError
 from showcase.domain.owner import Owner
 from showcase.domain.owner_id import OwnerId
-from showcase.infrastructure import mappers
+from showcase.infrastructure import mappers, pii_crypto
 from showcase.models import Breed as BreedRow
 from showcase.models import Dog as DogRow
 from showcase.models import OwnerProfile as OwnerProfileRow
@@ -28,7 +28,7 @@ class DjangoOwnerRepository:
     def get_by_email(self, email: Email) -> Owner | None:
         User = get_user_model()
         try:
-            user = User.objects.get(username=email.value)
+            user = User.objects.get(username=pii_crypto.email_login_username(email))
         except User.DoesNotExist:
             return None
         row = OwnerProfileRow.objects.filter(user=user).first()
@@ -41,7 +41,9 @@ class DjangoOwnerRepository:
 
     def is_email_registered(self, email: Email) -> bool:
         User = get_user_model()
-        return User.objects.filter(username=email.value).exists()
+        return User.objects.filter(
+            username=pii_crypto.email_login_username(email)
+        ).exists()
 
     def register_with_password(self, owner: Owner, password: str) -> None:
         try:

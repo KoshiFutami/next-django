@@ -5,6 +5,11 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
+from showcase.domain.email import Email
+from showcase.infrastructure.pii_crypto import (
+    email_login_username,
+    encrypt_pii,
+)
 from showcase.models import OwnerProfile
 
 
@@ -13,23 +18,23 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         stub_owner_id = UUID(str(settings.SHOWCASE_STUB_OWNER_ID))
-        email = settings.SHOWCASE_STUB_OWNER_EMAIL
+        email_raw = settings.SHOWCASE_STUB_OWNER_EMAIL
+        email_vo = Email.parse(str(email_raw))
+        login_uname = email_login_username(email_vo)
         nickname = "スタブオーナー"
 
         User = get_user_model()
         user, user_created = User.objects.get_or_create(
-            username=email,
-            defaults={"email": email},
+            username=login_uname,
+            defaults={"email": ""},
         )
-        if not user.email:
-            user.email = email
-            user.save(update_fields=["email"])
 
         _, owner_created = OwnerProfile.objects.update_or_create(
             id=stub_owner_id,
             defaults={
                 "user": user,
                 "nickname": nickname,
+                "pii_email_ciphertext": encrypt_pii(email_vo.value),
                 "profile_image_key": None,
                 "created_at": datetime.now(timezone.utc),
             },

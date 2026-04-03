@@ -4,6 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
+from showcase.interface.tests.pii_test_util import login_username
 from showcase.models import OwnerProfile as OwnerProfileRow
 
 
@@ -26,7 +27,7 @@ def test_auth_register_post_creates_owner_and_profile():
     assert data["email"] == "newuser@example.com"
     assert data["nickname"] == "登録ユーザー"
     assert "id" in data
-    user = get_user_model().objects.get(username="newuser@example.com")
+    user = get_user_model().objects.get(username=login_username("newuser@example.com"))
     assert user.check_password("register_test_pass_9")
     assert OwnerProfileRow.objects.filter(user=user).exists()
 

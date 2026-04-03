@@ -8,15 +8,22 @@ from showcase.domain.email import Email
 from showcase.domain.owner import Owner
 from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
+from showcase.infrastructure import pii_crypto
 from showcase.models import Breed as BreedRow
 from showcase.models import Dog as DogRow
 from showcase.models import OwnerProfile as OwnerProfileRow
 
 
+def _owner_email_from_row(row: OwnerProfileRow) -> Email:
+    if row.pii_email_ciphertext:
+        return Email.parse(pii_crypto.decrypt_pii(row.pii_email_ciphertext))
+    return Email.parse(row.user.email or row.user.username)
+
+
 def owner_profile_to_domain(row: OwnerProfileRow) -> Owner:
     return Owner(
         id=OwnerId(value=row.id),
-        email=Email.parse(row.user.email),
+        email=_owner_email_from_row(row),
         nickname=row.nickname,
         profile_image_key=ProfileImageKey.parse(row.profile_image_key)
         if row.profile_image_key
@@ -47,18 +54,19 @@ def dog_row_to_domain(row: DogRow) -> Dog:
 
 
 def create_owner_with_password(owner: Owner, password: str) -> None:
-    """新規 User + OwnerProfile を作成する。`username` はメールと同一。"""
+    """新規 User + OwnerProfile を作成する。メールは暗号化して Profile に、`username` は HMAC。"""
     User = get_user_model()
-    email = owner.email.value
+    login_name = pii_crypto.email_login_username(owner.email)
     user = User.objects.create_user(
-        username=email,
-        email=email,
+        username=login_name,
+        email="",
         password=password,
     )
     OwnerProfileRow.objects.create(
         id=owner.id.value,
         user=user,
         nickname=owner.nickname,
+        pii_email_ciphertext=pii_crypto.encrypt_pii(owner.email.value),
         profile_image_key=owner.profile_image_key.value
         if owner.profile_image_key
         else None,
@@ -68,10 +76,10 @@ def create_owner_with_password(owner: Owner, password: str) -> None:
 
 def persist_owner(owner: Owner) -> None:
     User = get_user_model()
-    email = owner.email.value
+    login_name = pii_crypto.email_login_username(owner.email)
     user, _ = User.objects.update_or_create(
-        username=email,
-        defaults={"email": email},
+        username=login_name,
+        defaults={"email": ""},
     )
     if not user.has_usable_password():
         user.set_unusable_password()
@@ -81,6 +89,7 @@ def persist_owner(owner: Owner) -> None:
         defaults={
             "user": user,
             "nickname": owner.nickname,
+            "pii_email_ciphertext": pii_crypto.encrypt_pii(owner.email.value),
             "profile_image_key": owner.profile_image_key.value
             if owner.profile_image_key
             else None,

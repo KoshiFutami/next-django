@@ -6,7 +6,7 @@ from showcase.models import Breed, Dog, OwnerProfile
 @admin.register(OwnerProfile)
 class OwnerProfileAdmin(admin.ModelAdmin):
     list_display = ("id", "nickname", "user", "created_at")
-    search_fields = ("nickname", "user__email", "user__username")
+    search_fields = ("nickname", "user__username")
 
 
 @admin.register(Breed)

@@ -14,6 +14,11 @@ class OwnerProfile(models.Model):
         related_name="owner_profile",
     )
     nickname = models.CharField(max_length=64)
+    pii_email_ciphertext = models.TextField(
+        blank=True,
+        null=True,
+        help_text="正規化済みメールの Fernet 暗号文（平文は User に保存しない）",
+    )
     profile_image_key = models.CharField(max_length=512, blank=True, null=True)
     created_at = models.DateTimeField()
 

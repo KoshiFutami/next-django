@@ -4,6 +4,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
+from showcase.interface.tests.pii_test_util import login_username
 from showcase.models import OwnerProfile as OwnerProfileRow
 
 
@@ -89,8 +90,8 @@ def test_auth_login_missing_password_returns_400():
 def test_auth_login_user_without_profile_returns_401():
     User = get_user_model()
     User.objects.create_user(
-        username="orphan@example.com",
-        email="orphan@example.com",
+        username=login_username("orphan@example.com"),
+        email="",
         password="orphan_pass_9",
     )
     assert not OwnerProfileRow.objects.filter(

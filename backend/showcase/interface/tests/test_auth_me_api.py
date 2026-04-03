@@ -1,27 +1,26 @@
 import json
-from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 import pytest
-from django.contrib.auth import get_user_model
 from django.test import Client
 from django.test.utils import override_settings
 
+from showcase.interface.tests.pii_test_util import (
+    create_owner_profile,
+    create_user,
+)
 from showcase.models import OwnerProfile as OwnerProfileRow
 
 STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _stub_owner():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="me@example.com", email="me@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("me@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="me@example.com",
     )
 
 

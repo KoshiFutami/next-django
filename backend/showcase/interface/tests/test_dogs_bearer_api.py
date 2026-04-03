@@ -51,7 +51,9 @@ def test_dogs_post_with_bearer_token_uses_registered_owner():
         HTTP_AUTHORIZATION=f"Bearer {access}",
     )
     assert res.status_code == 201
-    dog = DogRow.objects.get(name="JWT犬")
+    dog_id = res.json()["id"]
+    dog = DogRow.objects.get(pk=dog_id)
+    assert dog.name == "JWT犬"
     assert str(dog.owner_id) == owner_id
 
 

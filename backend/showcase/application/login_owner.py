@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from showcase.domain.email import Email
 from showcase.domain.owner import Owner
 from showcase.domain.repositories import OwnerRepository
+from showcase.infrastructure import pii_crypto
 
 
 class LoginFailedError(Exception):
@@ -35,7 +36,7 @@ class LoginOwnerUseCase:
         email = Email.parse(str(raw["email"]))
         user = authenticate(
             request=None,
-            username=email.value,
+            username=pii_crypto.email_login_username(email),
             password=password,
         )
         if user is None:

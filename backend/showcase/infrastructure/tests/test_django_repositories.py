@@ -10,6 +10,7 @@ from showcase.domain.email import Email
 from showcase.domain.exceptions import EmailAlreadyRegisteredError
 from showcase.domain.owner import Owner
 from showcase.domain.profile_image_key import ProfileImageKey
+from showcase.infrastructure import pii_crypto
 from showcase.infrastructure.django_repositories import (
     DjangoBreedRepository,
     DjangoDogRepository,
@@ -43,7 +44,9 @@ def test_register_with_password_roundtrip():
     got = repos.get_by_email(Email.parse("reg@example.com"))
     assert got is not None
     assert got.nickname == "登録"
-    u = get_user_model().objects.get(username="reg@example.com")
+    u = get_user_model().objects.get(
+        username=pii_crypto.email_login_username(Email.parse("reg@example.com"))
+    )
     assert u.check_password("repo_test_pass_9")
 
 
