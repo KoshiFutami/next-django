@@ -49,7 +49,7 @@ def test_dogs_detail_get_returns_dog():
 
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
-def test_dogs_detail_other_owners_dog_returns_404():
+def test_dogs_detail_get_other_owners_dog_returns_200():
     User = get_user_model()
     u_stub = User.objects.create_user(
         username="stub2@example.com", email="stub2@example.com", password="x"
@@ -84,8 +84,10 @@ def test_dogs_detail_other_owners_dog_returns_404():
 
     client = Client()
     res = client.get(f"/api/dogs/{other_dog.id}/")
-    assert res.status_code == 404
-    assert res.json()["code"] == "not_found"
+    assert res.status_code == 200
+    data = res.json()
+    assert data["id"] == str(other_dog.id)
+    assert data["name"] == "他人の犬"
 
 
 @pytest.mark.django_db

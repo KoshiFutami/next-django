@@ -6,12 +6,12 @@ from django.db import DatabaseError, connection
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from showcase.application.create_dog import CreateDogUseCase
+from showcase.application.create_my_dog import CreateMyDogUseCase
 from showcase.application.delete_my_dog import DeleteMyDogUseCase
-from showcase.application.get_my_dog import GetMyDogUseCase
+from showcase.application.get_dog import GetDogUseCase
+from showcase.application.list_all_dogs import ListAllDogsUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
-from showcase.application.list_my_dogs import ListMyDogsUseCase
-from showcase.application.update_dog import UpdateDogUseCase
+from showcase.application.update_my_dog import UpdateMyDogUseCase
 from showcase.domain.exceptions import DomainValidationError
 from showcase.infrastructure import DjangoBreedRepository
 from showcase.infrastructure.django_repositories import DjangoDogRepository
@@ -51,23 +51,22 @@ def health(_request):
 
 # Dogs
 def dogs_list(request):
-    """現在のオーナーに紐づく犬一覧を返す。"""
+    """`/api/dogs/` の GET。認証不要（全件閲覧用）。"""
     if request.method != "GET":
         return json_response(
             {"code": "method_not_allowed", "message": "Method not allowed"},
             status=HTTPStatus.METHOD_NOT_ALLOWED,
         )
-    owner_id = get_current_owner_id(request)
-    use_case = ListMyDogsUseCase(DjangoDogRepository())
-    dogs = use_case.execute(owner_id)
+    use_case = ListAllDogsUseCase(DjangoDogRepository())
+    dogs = use_case.execute()
     return json_response({"items": [dog_to_json(d) for d in dogs]})
 
 
-def dogs_create(request):
-    """現在のオーナーに犬を登録する。"""
+def create_my_dog(request):
+    """`/api/dogs/` の POST。現在のオーナーに犬を登録する。"""
     try:
         owner_id = get_current_owner_id(request)
-        use_case = CreateDogUseCase(DjangoDogRepository())
+        use_case = CreateMyDogUseCase(DjangoDogRepository())
         payload = parse_request_payload(request)
         dog = use_case.execute(owner_id, payload)
         return json_response(payload=dog_to_json(dog), status=HTTPStatus.CREATED)
@@ -93,15 +92,15 @@ def dogs(request):
             {"code": "method_not_allowed", "message": "Method not allowed"},
             status=HTTPStatus.METHOD_NOT_ALLOWED,
         )
-    return dogs_create(request)
+    return create_my_dog(request)
 
 
-def dogs_patch_detail(request, dog_id: UUID):
+def patch_my_dog_detail(request, dog_id: UUID):
     """`/api/dogs/<dog_id>/` の PATCH。本人の犬のみ部分更新。"""
     try:
         owner_id = get_current_owner_id(request)
         payload = parse_request_payload(request)
-        use_case = UpdateDogUseCase(DjangoDogRepository())
+        use_case = UpdateMyDogUseCase(DjangoDogRepository())
         dog = use_case.execute(owner_id, dog_id, payload)
         if dog is None:
             return json_response(
@@ -121,7 +120,7 @@ def dogs_patch_detail(request, dog_id: UUID):
         )
 
 
-def dogs_delete_detail(request, dog_id: UUID):
+def delete_my_dog_detail(request, dog_id: UUID):
     """`/api/dogs/<dog_id>/` の DELETE。本人の犬のみ。"""
     owner_id = get_current_owner_id(request)
     use_case = DeleteMyDogUseCase(DjangoDogRepository())
@@ -135,12 +134,11 @@ def dogs_delete_detail(request, dog_id: UUID):
 
 @csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
 def dog_detail(request, dog_id: UUID):
-    """`/api/dogs/<dog_id>/` の GET / PATCH / DELETE（本人の犬のみ）。"""
+    """`/api/dogs/<dog_id>/` の GET（認証不要）/ PATCH・DELETE（オーナー要・スタブ）。"""
     match request.method:
         case "GET":
-            owner_id = get_current_owner_id(request)
-            use_case = GetMyDogUseCase(DjangoDogRepository())
-            dog = use_case.execute(owner_id, dog_id)
+            use_case = GetDogUseCase(DjangoDogRepository())
+            dog = use_case.execute(dog_id)
             if dog is None:
                 return json_response(
                     {"code": "not_found", "message": "Dog not found"},
@@ -148,9 +146,9 @@ def dog_detail(request, dog_id: UUID):
                 )
             return json_response(dog_to_json(dog))
         case "PATCH":
-            return dogs_patch_detail(request, dog_id)
+            return patch_my_dog_detail(request, dog_id)
         case "DELETE":
-            return dogs_delete_detail(request, dog_id)
+            return delete_my_dog_detail(request, dog_id)
         case _:
             return json_response(
                 {"code": "method_not_allowed", "message": "Method not allowed"},

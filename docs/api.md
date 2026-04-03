@@ -42,23 +42,23 @@ Django `User` + `OwnerProfile` と整合させる。
 
 ## 愛犬（Dog）
 
-閲覧範囲は「自分の犬のみ」から始め、公開タイムラインは別リソースでもよい。
+閲覧（GET）は認証なしの公開 API とし、作成・更新・削除（POST / PATCH / DELETE）はオーナー文脈が必要（現状は `SHOWCASE_STUB_OWNER_ID` のスタブ）。本番では公開範囲・個人情報の取り扱いを別途決めること。
 
 | メソッド | パス | 認証 | 説明 |
 |---------|------|------|------|
-| GET | `/dogs/` | 要 | ログイン中 Owner の犬一覧 |
-| POST | `/dogs/` | 要 | 犬の登録（`breed_code` はマスタ参照） |
-| GET | `/dogs/{dog_id}/` | 要 | 詳細（本人の犬のみ可） |
-| PATCH | `/dogs/{dog_id}/` | 要 | 更新（プロフィール画像キー含む） |
-| DELETE | `/dogs/{dog_id}/` | 要 | 削除（任意） |
+| GET | `/dogs/` | 不要 | 登録済み犬の一覧（オーナーで絞らない） |
+| POST | `/dogs/` | 要 | 犬の登録（`breed_code` はマスタ参照。スタブ Owner に紐づく） |
+| GET | `/dogs/{dog_id}/` | 不要 | 詳細（ID が存在すれば返す） |
+| PATCH | `/dogs/{dog_id}/` | 要 | 更新（本人の犬のみ。スタブ Owner） |
+| DELETE | `/dogs/{dog_id}/` | 要 | 削除（本人の犬のみ。スタブ Owner） |
 
 **DELETE `/dogs/{dog_id}/`**
 
 - 成功時は **204 No Content**（**レスポンス本文なし**）。該当しない ID や他人の犬は **404**、`{"code":"not_found","message":"..."}` 形式の JSON。
 
-**GET `/dogs/`（実装済み・認証スタブ）**
+**GET `/dogs/`（実装済み・認証不要）**
 
-- 現在の Owner は `SHOWCASE_STUB_OWNER_ID`（環境変数、未設定時は `00000000-0000-0000-0000-000000000001`）で固定。JWT 導入後に差し替え。
+- **POST / PATCH / DELETE** のみ、現在の Owner を `SHOWCASE_STUB_OWNER_ID`（環境変数、未設定時は `00000000-0000-0000-0000-000000000001`）で固定。JWT 導入後に差し替え。
 - レスポンス例:
 
 ```json

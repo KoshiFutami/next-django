@@ -48,7 +48,7 @@ def _normalize_patch(raw: dict) -> dict:
     return patch
 
 
-class UpdateDogUseCase:
+class UpdateMyDogUseCase:
     def __init__(self, dog_repository: DogRepository):
         self.dog_repository = dog_repository
 

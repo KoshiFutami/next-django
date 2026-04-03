@@ -82,6 +82,12 @@ class DjangoDogRepository:
             return None
         return mappers.dog_row_to_domain(row)
 
+    def list_all_ordered(self) -> list[Dog]:
+        qs = DogRow.objects.select_related("breed", "owner").order_by(
+            "-created_at", "id"
+        )
+        return [mappers.dog_row_to_domain(r) for r in qs]
+
     def list_by_owner(self, owner_id: OwnerId) -> list[Dog]:
         qs = DogRow.objects.select_related("breed", "owner").filter(
             owner_id=owner_id.value
