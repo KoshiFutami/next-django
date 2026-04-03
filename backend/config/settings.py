@@ -41,6 +41,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "showcase.interface.middleware.ApiJsonErrorMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
