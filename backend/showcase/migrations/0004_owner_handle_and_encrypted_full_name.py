@@ -33,6 +33,10 @@ def noop_reverse(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    # PostgreSQL: 同一トランザクション内で RunPython の UPDATE の直後に ALTER すると
+    # 「pending trigger events」で失敗することがあるため、操作ごとにコミットする。
+    atomic = False
+
     dependencies = [
         ("showcase", "0003_dog_name_plaintext"),
     ]
