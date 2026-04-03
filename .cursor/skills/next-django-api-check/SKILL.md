@@ -28,7 +28,7 @@ Django は `CsrfViewMiddleware` 有効時、ブラウザ以外からの POST で
 
 ## よくある失敗
 
-1. **`OwnerProfile matching query does not exist`** — `seed_stub_owner` を実行していない、または `SHOWCASE_STUB_OWNER_ID` と DB の id が一致していない
+1. **`OwnerProfile matching query does not exist`** — **POST / PATCH / DELETE** で `get_current_owner_id` が参照するスタブ Owner が DB に無い。`seed_stub_owner` を実行するか、`SHOWCASE_STUB_OWNER_ID` と `OwnerProfile.id` を一致させる。**GET `/api/dogs/`・GET `/api/dogs/{id}/` はスタブ不要**（認証なしの閲覧）
 2. **Empty reply / 接続エラー** — backend コンテナが落ちている、またはポート違い
 
 ## 疎通の最短
