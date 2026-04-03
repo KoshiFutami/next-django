@@ -21,6 +21,13 @@ ORM モデルは `showcase/models.py`。
 
 設計の「なぜそうしたか」は [docs/adr/](docs/adr/) に記録する。
 
+## Python 品質（Ruff / pre-commit / Claude Code）
+
+- **Ruff**: `backend/pyproject.toml`。開発用依存は `backend/requirements-dev.txt`。
+- **コミット前**: ルートで `pip install pre-commit && make pre-commit-install` → コミット時に Ruff が走る（詳細は [ADR 0003](docs/adr/0003-python-quality-via-hooks-and-ci.md)）。
+- **手動**: `pip install -r backend/requirements-dev.txt` のうえ `make lint-backend`。
+- **Claude Code**: `.claude/settings.json` の PostToolUse で同じ Ruff を実行（ホストに `ruff` が必要）。
+
 ## ローカル運用
 
 - 起動: `make up`

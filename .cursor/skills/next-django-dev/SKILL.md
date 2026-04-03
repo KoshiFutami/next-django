@@ -20,6 +20,13 @@ description: next-django モノレポの開発手順・薄いDDD・Docker/Makefi
 
 View にビジネスロジックを溜めない。ORM を直接 view から触らない方針を基本とする。
 
+## Python lint（Ruff）
+
+- 初回: `pip install -r backend/requirements-dev.txt`
+- 手動チェック: ルートで `make lint-backend`
+- コミットフック: `pip install pre-commit` → `make pre-commit-install`（[ADR 0003](../../../docs/adr/0003-python-quality-via-hooks-and-ci.md)）
+- Claude Code 利用時は `.claude/hooks/post-ruff.sh` が PostToolUse で動く（`ruff` が PATH にあること）
+
 ## Docker / Make
 
 - ルートで `make up` → `make psql` / `make test` / `make migrate`

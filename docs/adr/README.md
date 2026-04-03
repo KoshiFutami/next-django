@@ -27,5 +27,6 @@
 |------|----------|------|
 | [0001](0001-use-architecture-decision-records.md) | ADR を採用する | Accepted |
 | [0002](0002-thin-ddd-for-showcase-backend.md) | showcase バックエンドに薄い DDD を採用する | Accepted |
+| [0003](0003-python-quality-via-hooks-and-ci.md) | Python 品質を pre-commit・CI・Claude Code フックで担保する | Accepted |
 
 （新規 ADR を追加したらこの表を更新する。）
