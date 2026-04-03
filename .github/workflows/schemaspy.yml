@@ -64,7 +64,9 @@ jobs:
       - name: Run SchemaSpy
         run: |
           mkdir -p docs/schemaspy
+          # バインドマウント先にイメージ既定ユーザーでは書けない（/output/tables 作成失敗）ため root で実行
           docker run --rm \
+            --user 0:0 \
             --add-host=host.docker.internal:host-gateway \
             -v "${GITHUB_WORKSPACE}/docs/schemaspy:/output" \
             schemaspy/schemaspy:7.0.2 \
