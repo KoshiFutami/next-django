@@ -1,0 +1,103 @@
+name: SchemaSpy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # スキーマが変わるのはマイグレーションが主。ワークフロー変更時は定義どおり動くか確認する。
+      - "backend/**/migrations/**/*.py"
+      - ".github/workflows/schemaspy.yml"
+  pull_request:
+    paths:
+      - "backend/**/migrations/**/*.py"
+      - ".github/workflows/schemaspy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: schemaspy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: showcase
+          POSTGRES_PASSWORD: showcase
+          POSTGRES_DB: showcase
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U showcase -d showcase"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: showcase
+      POSTGRES_USER: showcase
+      POSTGRES_PASSWORD: showcase
+      DJANGO_SECRET_KEY: ci-dummy-secret-not-for-production
+      DJANGO_SETTINGS_MODULE: config.settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies and migrate
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+          python manage.py migrate --noinput
+
+      - name: Run SchemaSpy
+        run: |
+          mkdir -p docs/schemaspy
+          docker run --rm \
+            --add-host=host.docker.internal:host-gateway \
+            -v "${GITHUB_WORKSPACE}/docs/schemaspy:/output" \
+            schemaspy/schemaspy:7.0.2 \
+            -vizjs \
+            -t pgsql11 \
+            -host host.docker.internal \
+            -port 5432 \
+            -db showcase \
+            -u showcase \
+            -p showcase \
+            -s public
+
+      - name: Ensure docs/schemaspy matches repository (pull_request)
+        if: github.event_name == 'pull_request'
+        run: |
+          git add docs/schemaspy
+          if ! git diff --cached --quiet; then
+            echo "::error::docs/schemaspy がコミット済みの内容と一致しません。ローカルで \`make schemaspy\` を実行し、差分をコミットしてください。"
+            git diff --cached --stat
+            exit 1
+          fi
+
+      - name: Commit and push if changed (main)
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/schemaspy
+          if git diff --cached --quiet; then
+            echo "SchemaSpy 出力に変更なし"
+          else
+            git commit -m "chore: SchemaSpy 生成物を更新"
+            git push
+          fi

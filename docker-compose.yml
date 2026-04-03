@@ -52,6 +52,35 @@ services:
     depends_on:
       - backend
 
+  # DB スキーマ HTML（SchemaSpy）。`make schemaspy` または
+  # `docker compose --profile tools run --rm schemaspy`
+  schemaspy:
+    image: schemaspy/schemaspy:7.0.2
+    profiles: ["tools"]
+    # バインドマウント ./docs/schemaspy にデフォルトユーザーでは書けない環境があるため
+    user: "0:0"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./docs/schemaspy:/output
+    command:
+      - "-vizjs"
+      - "-t"
+      - "pgsql11"
+      - "-host"
+      - "db"
+      - "-port"
+      - "5432"
+      - "-db"
+      - "showcase"
+      - "-u"
+      - "showcase"
+      - "-p"
+      - "showcase"
+      - "-s"
+      - "public"
+
 volumes:
   postgres_data:
   frontend_node_modules:

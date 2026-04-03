@@ -2,7 +2,7 @@ DC := docker compose
 
 .PHONY: help up down restart ps logs build pull \
 	bash-backend bash-db psql \
-	migrate makemigrations test \
+	migrate makemigrations test schemaspy \
 	lint-backend lint-backend-fix pre-commit-install \
 	pr pr-draft pr-web \
 	commit review approve push
@@ -28,6 +28,7 @@ help:
 	@echo "  migrate       Run Django migrations"
 	@echo "  makemigrations Create Django migration files"
 	@echo "  test          Run backend pytest"
+	@echo "  schemaspy     SchemaSpy で DB スキーマ HTML を docs/schemaspy/ に生成（要: db 起動）"
 	@echo "  lint-backend      Ruff (check + format --check) on backend/ (要: python3 -m pip install -r backend/requirements-dev.txt)"
 	@echo "  lint-backend-fix  Ruff で自動修正（check --fix + format 書き込み）"
 	@echo "  pre-commit-install  pip install pre-commit && pre-commit install（ルート）"
@@ -79,6 +80,11 @@ makemigrations:
 
 test:
 	$(DC) exec backend pytest -q
+
+schemaspy:
+	@mkdir -p docs/schemaspy
+	$(DC) --profile tools run --rm schemaspy
+	@echo "生成先: docs/schemaspy/index.html（ブラウザで開くか静的サーバーで配信）"
 
 lint-backend:
 	@python3 -m ruff --version >/dev/null 2>&1 || (echo "ruff が必要です: python3 -m pip install -r backend/requirements-dev.txt" && false)
