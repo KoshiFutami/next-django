@@ -13,6 +13,10 @@ from showcase.application.get_my_profile import GetMyProfileUseCase
 from showcase.application.list_all_dogs import ListAllDogsUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
 from showcase.application.login_owner import LoginFailedError, LoginOwnerUseCase
+from showcase.application.logout_owner import (
+    LogoutOwnerUseCase,
+    RefreshAccessMismatchError,
+)
 from showcase.application.refresh_access_token import (
     RefreshAccessTokenUseCase,
     RefreshTokenInvalidError,
@@ -26,7 +30,11 @@ from showcase.domain.exceptions import (
 )
 from showcase.infrastructure import DjangoBreedRepository, DjangoOwnerRepository
 from showcase.infrastructure.django_repositories import DjangoDogRepository
-from showcase.interface.auth import OwnerAuthError, get_current_owner_id
+from showcase.interface.auth import (
+    OwnerAuthError,
+    get_current_owner_id,
+    require_access_token_user_id,
+)
 from showcase.interface.responses import json_response
 from showcase.interface.serializers import (
     breed_to_json,
@@ -243,6 +251,49 @@ def auth_refresh(request):
             status=HTTPStatus.METHOD_NOT_ALLOWED,
         )
     return post_auth_refresh(request)
+
+
+def post_auth_logout(request):
+    """`/api/auth/logout/` の POST。access + body.refresh でリフレッシュを失効（ブラックリスト）。"""
+    try:
+        access_user_id = require_access_token_user_id(request)
+        payload = parse_request_payload(request)
+        LogoutOwnerUseCase().execute(access_user_id, payload)
+        return HttpResponse(status=HTTPStatus.NO_CONTENT)
+    except OwnerAuthError as exc:
+        return _unauthorized_json(str(exc))
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except RefreshTokenInvalidError:
+        return json_response(
+            {
+                "code": "invalid_refresh_token",
+                "message": "リフレッシュトークンが無効または期限切れです",
+            },
+            status=HTTPStatus.UNAUTHORIZED,
+        )
+    except RefreshAccessMismatchError:
+        return json_response(
+            {
+                "code": "forbidden",
+                "message": "リフレッシュトークンがこのセッションと一致しません",
+            },
+            status=HTTPStatus.FORBIDDEN,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_logout(request):
+    """`/api/auth/logout/` の POST のみ。要 Bearer access + JSON refresh。"""
+    if request.method != "POST":
+        return json_response(
+            {"code": "method_not_allowed", "message": "Method not allowed"},
+            status=HTTPStatus.METHOD_NOT_ALLOWED,
+        )
+    return post_auth_logout(request)
 
 
 # Dogs

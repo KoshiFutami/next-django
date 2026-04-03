@@ -26,6 +26,22 @@ def _owner_id_from_bearer_token(token_str: str) -> OwnerId:
     return OwnerId(value=row.id)
 
 
+def require_access_token_user_id(request) -> int:
+    """`Authorization: Bearer` の access のみ検証（スタブに落とさない）。`user_id` を返す。"""
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    parts = auth_header.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise OwnerAuthError("Authorization: Bearer でアクセストークンが必要です")
+    token_str = parts[1].strip()
+    if not token_str:
+        raise OwnerAuthError("Bearer トークンが空です")
+    try:
+        access = AccessToken(token_str)
+        return int(access["user_id"])
+    except TokenError as exc:
+        raise OwnerAuthError("トークンが無効または期限切れです") from exc
+
+
 def get_current_owner_id(request) -> OwnerId:
     auth_header = request.META.get("HTTP_AUTHORIZATION", "")
     parts = auth_header.split(None, 1)
