@@ -12,6 +12,8 @@ description: next-django モノレポの開発手順・薄いDDD・Docker/Makefi
 
 エントリの短いポインタは [AGENTS.md](../../../AGENTS.md)。Claude Code は [CLAUDE.md](../../../CLAUDE.md) も（[ADR 0004](../../../docs/adr/0004-agent-entrypoints-as-pointers.md)）。
 
+作業の進め方（計画→実行・小さな縦割り・`make test` で完了）は [ADR 0005](../../../docs/adr/0005-plan-then-execute-with-tests.md)。
+
 ## アーキテクチャ（薄い DDD）
 
 1. **永続化の抽象**: `backend/showcase/domain/repositories.py`（`Protocol`）

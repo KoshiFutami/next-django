@@ -29,5 +29,6 @@
 | [0002](0002-thin-ddd-for-showcase-backend.md) | showcase バックエンドに薄い DDD を採用する | Accepted |
 | [0003](0003-python-quality-via-hooks-and-ci.md) | Python 品質を pre-commit・CI・Claude Code フックで担保する | Accepted |
 | [0004](0004-agent-entrypoints-as-pointers.md) | エージェント向けエントリ（AGENTS.md / CLAUDE.md）をポインタとして保つ | Accepted |
+| [0005](0005-plan-then-execute-with-tests.md) | エージェント作業で計画と実行を分離し完了はテストで検証する | Accepted |
 
 （新規 ADR を追加したらこの表を更新する。）

@@ -9,6 +9,7 @@
 - **設計の「なぜ」**: [docs/adr/](docs/adr/)（有効は `Accepted`。[薄い DDD](docs/adr/0002-thin-ddd-for-showcase-backend.md)）
 - **Python 品質・Claude Hooks**: [ADR 0003](docs/adr/0003-python-quality-via-hooks-and-ci.md)
 - **エントリポイント方針（本ファイルの短さ）**: [ADR 0004](docs/adr/0004-agent-entrypoints-as-pointers.md)
+- **計画と実行・完了条件**: [ADR 0005](docs/adr/0005-plan-then-execute-with-tests.md)（[Harness セクション4](https://nyosegawa.com/posts/harness-engineering-best-practices-2026/#4%3A-%E8%A8%88%E7%94%BB%E3%81%A8%E5%AE%9F%E8%A1%8C%E3%82%92%E5%88%86%E9%9B%A2%E3%81%99%E3%82%8B)）
 - **API 一覧**: [docs/api.md](docs/api.md) / Postman は [docs/postman/](docs/postman/)
 
 ## ルーティング（よく使うコマンド）
@@ -27,6 +28,10 @@
 ## レイヤー（置き場所だけ）
 
 `showcase/` のディレクトリと ADR 0002 が境界の真実。**domain** → **application** → **infrastructure** → **interface**。ORM は `showcase/models.py`。
+
+## 計画と実行（要約）
+
+大きめの変更は **先に計画**（IDE の Plan Mode 等）→ **実装**。**一度に一つの縦割り**に留める。**完了**は **`make test` が通る**（必要なら lint）まで。詳細は [ADR 0005](docs/adr/0005-plan-then-execute-with-tests.md)。
 
 ## 禁止・落とし穴
 
