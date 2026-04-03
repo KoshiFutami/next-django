@@ -3,9 +3,11 @@ from http import HTTPStatus
 from uuid import UUID
 
 from django.db import DatabaseError, connection
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from showcase.application.create_dog import CreateDogUseCase
+from showcase.application.delete_my_dog import DeleteMyDogUseCase
 from showcase.application.get_my_dog import GetMyDogUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
 from showcase.application.list_my_dogs import ListMyDogsUseCase
@@ -119,25 +121,41 @@ def dogs_patch_detail(request, dog_id: UUID):
         )
 
 
+def dogs_delete_detail(request, dog_id: UUID):
+    """`/api/dogs/<dog_id>/` の DELETE。本人の犬のみ。"""
+    owner_id = get_current_owner_id(request)
+    use_case = DeleteMyDogUseCase(DjangoDogRepository())
+    if use_case.execute(owner_id, dog_id) == 0:
+        return json_response(
+            {"code": "not_found", "message": "Dog not found"},
+            status=HTTPStatus.NOT_FOUND,
+        )
+    return HttpResponse(status=HTTPStatus.NO_CONTENT)
+
+
 @csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
 def dog_detail(request, dog_id: UUID):
-    """`/api/dogs/<dog_id>/` の GET / PATCH。本人の犬のみ。"""
-    if request.method == "GET":
-        owner_id = get_current_owner_id(request)
-        use_case = GetMyDogUseCase(DjangoDogRepository())
-        dog = use_case.execute(owner_id, dog_id)
-        if dog is None:
+    """`/api/dogs/<dog_id>/` の GET / PATCH / DELETE（本人の犬のみ）。"""
+    match request.method:
+        case "GET":
+            owner_id = get_current_owner_id(request)
+            use_case = GetMyDogUseCase(DjangoDogRepository())
+            dog = use_case.execute(owner_id, dog_id)
+            if dog is None:
+                return json_response(
+                    {"code": "not_found", "message": "Dog not found"},
+                    status=HTTPStatus.NOT_FOUND,
+                )
+            return json_response(dog_to_json(dog))
+        case "PATCH":
+            return dogs_patch_detail(request, dog_id)
+        case "DELETE":
+            return dogs_delete_detail(request, dog_id)
+        case _:
             return json_response(
-                {"code": "not_found", "message": "Dog not found"},
-                status=HTTPStatus.NOT_FOUND,
+                {"code": "method_not_allowed", "message": "Method not allowed"},
+                status=HTTPStatus.METHOD_NOT_ALLOWED,
             )
-        return json_response(dog_to_json(dog))
-    if request.method == "PATCH":
-        return dogs_patch_detail(request, dog_id)
-    return json_response(
-        {"code": "method_not_allowed", "message": "Method not allowed"},
-        status=HTTPStatus.METHOD_NOT_ALLOWED,
-    )
 
 
 # Breeds

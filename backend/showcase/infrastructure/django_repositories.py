@@ -54,6 +54,18 @@ class DjangoBreedRepository:
 
 
 class DjangoDogRepository:
+    def delete_by_id_for_owner(self, owner_id: OwnerId, dog_id: UUID) -> int:
+        """`Dog` テーブルで削除された行数（0 なら該当なし）。
+
+        `QuerySet.delete()` の第1戻り値は CASCADE 先も含む総数のため使わない。
+        第2戻り値のモデル別内訳で `Dog` のみを数える。論理削除に変える場合は
+        `update(deleted_at=...)` 等に差し替え、戻り値の意味も合わせて変えること。
+        """
+        _total, per_model = DogRow.objects.filter(
+            id=dog_id, owner_id=owner_id.value
+        ).delete()
+        return int(per_model.get(DogRow._meta.label, 0))
+
     def get_by_id(self, dog_id: UUID) -> Dog | None:
         try:
             row = DogRow.objects.select_related("breed", "owner").get(pk=dog_id)
