@@ -7,9 +7,11 @@ from showcase.domain.repositories import DogRepository
 
 class CreateDogUseCase:
     def __init__(self, dog_repository: DogRepository):
+        """登録先のリポジトリを受け取る。"""
         self.dog_repository = dog_repository
 
     def execute(self, owner_id: OwnerId, post_params: dict) -> Dog:
+        """入力値から Dog を生成して保存し、保存済みエンティティを返す。"""
         dog = Dog.register(
             name=post_params.get("name"),
             birth_date=date.fromisoformat(post_params.get("birth_date")),

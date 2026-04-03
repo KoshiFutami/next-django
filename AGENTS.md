@@ -64,3 +64,5 @@ ORM モデルは `showcase/models.py`。
 ## 細かいコーディング規約
 
 エディタ・エージェント向けの詳細ルールは **`.cursor/rules/`** の `.mdc` に置く。ここは要約のみ。
+
+- Python の public な関数・メソッドには、原則として docstring を付ける（目的・戻り値・必要なら例外）。
