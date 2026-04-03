@@ -9,6 +9,8 @@ from showcase.application.create_dog import CreateDogUseCase
 from showcase.application.get_my_dog import GetMyDogUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
 from showcase.application.list_my_dogs import ListMyDogsUseCase
+from showcase.application.update_dog import UpdateDogUseCase
+from showcase.domain.exceptions import DomainValidationError
 from showcase.infrastructure import DjangoBreedRepository
 from showcase.infrastructure.django_repositories import DjangoDogRepository
 from showcase.interface.auth import get_current_owner_id
@@ -92,22 +94,50 @@ def dogs(request):
     return dogs_create(request)
 
 
+def dogs_patch_detail(request, dog_id: UUID):
+    """`/api/dogs/<dog_id>/` の PATCH。本人の犬のみ部分更新。"""
+    try:
+        owner_id = get_current_owner_id(request)
+        payload = parse_request_payload(request)
+        use_case = UpdateDogUseCase(DjangoDogRepository())
+        dog = use_case.execute(owner_id, dog_id, payload)
+        if dog is None:
+            return json_response(
+                {"code": "not_found", "message": "Dog not found"},
+                status=HTTPStatus.NOT_FOUND,
+            )
+        return json_response(dog_to_json(dog))
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except DomainValidationError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
 def dog_detail(request, dog_id: UUID):
-    """`/api/dogs/<dog_id>/` の GET。本人の犬のみ。"""
-    if request.method != "GET":
-        return json_response(
-            {"code": "method_not_allowed", "message": "Method not allowed"},
-            status=HTTPStatus.METHOD_NOT_ALLOWED,
-        )
-    owner_id = get_current_owner_id(request)
-    use_case = GetMyDogUseCase(DjangoDogRepository())
-    dog = use_case.execute(owner_id, dog_id)
-    if dog is None:
-        return json_response(
-            {"code": "not_found", "message": "Dog not found"},
-            status=HTTPStatus.NOT_FOUND,
-        )
-    return json_response(dog_to_json(dog))
+    """`/api/dogs/<dog_id>/` の GET / PATCH。本人の犬のみ。"""
+    if request.method == "GET":
+        owner_id = get_current_owner_id(request)
+        use_case = GetMyDogUseCase(DjangoDogRepository())
+        dog = use_case.execute(owner_id, dog_id)
+        if dog is None:
+            return json_response(
+                {"code": "not_found", "message": "Dog not found"},
+                status=HTTPStatus.NOT_FOUND,
+            )
+        return json_response(dog_to_json(dog))
+    if request.method == "PATCH":
+        return dogs_patch_detail(request, dog_id)
+    return json_response(
+        {"code": "method_not_allowed", "message": "Method not allowed"},
+        status=HTTPStatus.METHOD_NOT_ALLOWED,
+    )
 
 
 # Breeds
