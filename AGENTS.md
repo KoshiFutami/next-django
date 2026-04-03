@@ -26,7 +26,7 @@ ORM モデルは `showcase/models.py`。
 - **Ruff**: `backend/pyproject.toml`。開発用依存は `backend/requirements-dev.txt`。
 - **コミット前**: ルートで `pip install pre-commit && make pre-commit-install` → コミット時に Ruff が走る（詳細は [ADR 0003](docs/adr/0003-python-quality-via-hooks-and-ci.md)）。
 - **手動**: `pip install -r backend/requirements-dev.txt` のうえ `make lint-backend`。
-- **Claude Code**: `.claude/settings.json` の PostToolUse で同じ Ruff を実行（ホストに `ruff` が必要）。
+- **Claude Code**: `.claude/settings.json` の PostToolUse で同じ Ruff を実行（ホストに `ruff` が必要）。PreToolUse で `pre-protect-config.sh` により Ruff / pre-commit / 関連 CI・フック設定の編集をブロック（設定変更はエディタや通常の PR で）。
 
 ## ローカル運用
 
