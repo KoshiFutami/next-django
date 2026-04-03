@@ -8,9 +8,11 @@
 2. **Build and deployment** で **Source** を **GitHub Actions** にする（初回のみ）
 3. デプロイ後、画面上に表示される URL（例: `https://<owner>.github.io/<repo>/`）から `index.html` に相当するトップを開く
 
-ワークフロー: `.github/workflows/schemaspy.yml`（`main` へマイグレーション関連の push、または手動 **Run workflow**）。
+ワークフロー: `.github/workflows/schemaspy.yml`
 
-`main` への **push** でデプロイが終わると、マージコミットや squash メッセージから拾った **PR に GitHub Pages の URL をコメント**します（直接 `main` へ push しただけで PR が無い場合はコメントしません）。
+- **pull request**: マイグレーション（または当該 workflow）に差分があるとき **build のみ**（migrate → SchemaSpy が通るかのスモーク）。Pages へは載せません。
+- **push（`main`）**: 同条件で build のあと **GitHub Pages にデプロイ**し、マージ元 PR に URL をコメントします。
+- **workflow_dispatch**: 手動（ブランチが `main` のときだけアップロード・デプロイ・コメント対象）。
 
 ## ローカル
 

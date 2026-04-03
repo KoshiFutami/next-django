@@ -6,12 +6,13 @@ on:
     paths:
       - "backend/**/migrations/**/*.py"
       - ".github/workflows/schemaspy.yml"
+  pull_request:
+    paths:
+      - "backend/**/migrations/**/*.py"
+      - ".github/workflows/schemaspy.yml"
   workflow_dispatch:
 
-# GitHub Pages 公式例に合わせたデプロイ直列化
-concurrency:
-  group: pages
-  cancel-in-progress: false
+# Pages デプロイだけ直列化（PR の build が main の deploy キューで待たされないようにする）
 
 permissions:
   contents: read
@@ -85,6 +86,9 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
