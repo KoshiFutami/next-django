@@ -2,7 +2,6 @@ from django.core.management.base import BaseCommand
 
 from showcase.models import Breed
 
-
 BREEDS = [
     {"code": 1, "name": "柴犬", "sort_order": 10},
     {"code": 2, "name": "秋田犬", "sort_order": 20},
@@ -59,7 +58,9 @@ class Command(BaseCommand):
                 "name": item["name"],
                 "sort_order": item["sort_order"],
             }
-            _, created = Breed.objects.update_or_create(code=item["code"], defaults=defaults)
+            _, created = Breed.objects.update_or_create(
+                code=item["code"], defaults=defaults
+            )
             if created:
                 created_count += 1
             else:

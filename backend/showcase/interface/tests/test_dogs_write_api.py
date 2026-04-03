@@ -16,7 +16,9 @@ STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 def _stub_owner_and_breed():
     User = get_user_model()
-    u = User.objects.create_user(username="stub-w@example.com", email="stub-w@example.com", password="x")
+    u = User.objects.create_user(
+        username="stub-w@example.com", email="stub-w@example.com", password="x"
+    )
     OwnerProfileRow.objects.create(
         id=STUB_OWNER_ID,
         user=u,
@@ -77,6 +79,20 @@ def test_dogs_post_invalid_birth_date_returns_400():
     res = client.post(
         "/api/dogs/",
         data=json.dumps(body),
+        content_type="application/json",
+    )
+    assert res.status_code == 400
+    assert res.json()["code"] == "bad_request"
+
+
+@pytest.mark.django_db
+@override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
+def test_dogs_post_invalid_json_returns_400():
+    _stub_owner_and_breed()
+    client = Client()
+    res = client.post(
+        "/api/dogs/",
+        data='{"name": "ポチ",',
         content_type="application/json",
     )
     assert res.status_code == 400

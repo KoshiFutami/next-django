@@ -1,0 +1,2 @@
+# ローカル lint / pre-commit / Claude Code フック用（本番イメージには含めない）
+ruff>=0.11,<0.12

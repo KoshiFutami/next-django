@@ -1,0 +1,71 @@
+name: Backend Ruff
+
+# チェックのみ（自動修正・push 戻しは行わない）。
+# - ruff check は --output-format=github で PR の「Files changed」にインライン注釈が付く。
+# - 同一リポジトリからの PR で失敗したときだけ、会話タブに全文要約コメント（フォーク PR は権限の都合でスキップ）。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: backend-ruff-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+
+      - name: Install Ruff
+        run: pip install -r requirements-dev.txt
+
+      - name: Ruff check
+        id: ruff_check
+        run: ruff check . --output-format=github
+
+      - name: Ruff format (check only)
+        run: ruff format --check .
+
+      - name: PR に Ruff check のログをコメント（check 失敗時・同一リポのみ）
+        if: >
+          failure() &&
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          steps.ruff_check.outcome == 'failure'
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd backend
+          {
+            echo "## Backend Ruff: \`ruff check\` が失敗しました"
+            echo ""
+            echo "PR の **Files changed** タブでも行が指摘されている場合があります。"
+            echo ""
+            echo '```text'
+            (ruff check . --output-format=full 2>&1 || true) | head -n 200
+            echo '```'
+          } > /tmp/ruff-pr-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file /tmp/ruff-pr-comment.md

@@ -15,10 +15,14 @@ STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
-def test_dogs_list_returns_only_stub_owner_dogs():
+def test_dogs_list_returns_all_dogs_without_owner_filter():
     User = get_user_model()
-    u_stub = User.objects.create_user(username="stub@example.com", email="stub@example.com", password="x")
-    u_other = User.objects.create_user(username="other@example.com", email="other@example.com", password="x")
+    u_stub = User.objects.create_user(
+        username="stub@example.com", email="stub@example.com", password="x"
+    )
+    u_other = User.objects.create_user(
+        username="other@example.com", email="other@example.com", password="x"
+    )
 
     OwnerProfileRow.objects.create(
         id=STUB_OWNER_ID,
@@ -46,7 +50,7 @@ def test_dogs_list_returns_only_stub_owner_dogs():
         gender="male",
         created_at=datetime(2024, 6, 1, tzinfo=timezone.utc),
     )
-    DogRow.objects.create(
+    other_dog = DogRow.objects.create(
         owner_id=other_id,
         breed_id=1,
         name="他人の犬",
@@ -61,18 +65,19 @@ def test_dogs_list_returns_only_stub_owner_dogs():
     res = client.get("/api/dogs/")
     assert res.status_code == 200
     data = res.json()
-    assert data["items"]
-    assert len(data["items"]) == 1
-    item = data["items"][0]
-    assert item["id"] == str(mine.id)
-    assert item["name"] == "ポチ"
-    assert item["breed_code"] == 1
+    assert len(data["items"]) == 2
+    ids = {item["id"] for item in data["items"]}
+    assert ids == {str(mine.id), str(other_dog.id)}
+    names = {item["name"] for item in data["items"]}
+    assert names == {"ポチ", "他人の犬"}
 
 
 @pytest.mark.django_db
 def test_dogs_list_empty_when_no_dogs():
     User = get_user_model()
-    u = User.objects.create_user(username="empty@example.com", email="empty@example.com", password="x")
+    u = User.objects.create_user(
+        username="empty@example.com", email="empty@example.com", password="x"
+    )
     OwnerProfileRow.objects.create(
         id=STUB_OWNER_ID,
         user=u,
@@ -82,7 +87,6 @@ def test_dogs_list_empty_when_no_dogs():
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
 
     client = Client()
-    with override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID)):
-        res = client.get("/api/dogs/")
+    res = client.get("/api/dogs/")
     assert res.status_code == 200
     assert res.json() == {"items": []}

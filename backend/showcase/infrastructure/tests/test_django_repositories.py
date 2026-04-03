@@ -1,12 +1,12 @@
-import pytest
-from uuid import uuid4
 from datetime import date
+from uuid import uuid4
+
+import pytest
 
 from showcase.domain.breed import Breed
 from showcase.domain.dog import Dog
 from showcase.domain.email import Email
 from showcase.domain.owner import Owner
-from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
 from showcase.infrastructure.django_repositories import (
     DjangoBreedRepository,
@@ -63,3 +63,34 @@ def test_breed_and_dog_roundtrip():
     listed = dog_repos.list_by_owner(owner.id)
     assert len(listed) == 1
     assert listed[0].id == dog.id
+
+    by_owner = dog_repos.get_by_id_for_owner(owner.id, dog.id)
+    assert by_owner is not None
+    assert by_owner.id == dog.id
+
+
+@pytest.mark.django_db
+def test_dog_get_by_id_for_owner_wrong_owner_returns_none():
+    breed = Breed.create(code=1, name="柴犬", sort_order=0)
+    DjangoBreedRepository().save(breed)
+
+    owner_a = Owner.register(email=Email.parse("a@example.com"), nickname="A")
+    owner_b = Owner.register(email=Email.parse("b@example.com"), nickname="B")
+    DjangoOwnerRepository().save(owner_a)
+    DjangoOwnerRepository().save(owner_b)
+
+    dog = Dog(
+        id=uuid4(),
+        name="共有しない犬",
+        birth_date=date(2021, 5, 1),
+        weight=8.0,
+        color="茶",
+        gender="male",
+        owner_id=owner_a.id,
+        breed_code=1,
+        profile_image_key=None,
+    )
+    dog_repos = DjangoDogRepository()
+    dog_repos.save(dog)
+
+    assert dog_repos.get_by_id_for_owner(owner_b.id, dog.id) is None

@@ -1,4 +1,8 @@
+import sys
+import traceback
 from http import HTTPStatus
+
+from django.conf import settings
 
 from showcase.interface.responses import json_response
 
@@ -29,10 +33,19 @@ def page_not_found(_request, exception):
 
 def server_error(_request):
     """500 Internal Server Error を JSON で返す。"""
-    return json_response(
-        {"code": "internal_server_error", "message": "Internal server error"},
-        status=HTTPStatus.INTERNAL_SERVER_ERROR,
-    )
+    payload: dict = {
+        "code": "internal_server_error",
+        "message": "Internal server error",
+    }
+    if settings.DEBUG:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        if exc_value is not None:
+            payload["message"] = str(exc_value)
+            payload["exception"] = exc_type.__name__
+            payload["traceback"] = "".join(
+                traceback.format_exception(exc_type, exc_value, exc_tb)
+            )
+    return json_response(payload, status=HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 def csrf_failure(_request, reason=""):

@@ -1,11 +1,12 @@
 from datetime import date
+
 from showcase.domain.dog import Dog
 from showcase.domain.owner_id import OwnerId
 from showcase.domain.profile_image_key import ProfileImageKey
 from showcase.domain.repositories import DogRepository
 
 
-class CreateDogUseCase:
+class CreateMyDogUseCase:
     def __init__(self, dog_repository: DogRepository):
         """登録先のリポジトリを受け取る。"""
         self.dog_repository = dog_repository
@@ -20,7 +21,11 @@ class CreateDogUseCase:
             gender=post_params.get("gender"),
             owner_id=owner_id,
             breed_code=int(post_params.get("breed_code")) or 0,
-            profile_image_key=ProfileImageKey.parse(post_params.get("profile_image_key")) if post_params.get("profile_image_key") else None,
+            profile_image_key=ProfileImageKey.parse(
+                post_params.get("profile_image_key")
+            )
+            if post_params.get("profile_image_key")
+            else None,
         )
         self.dog_repository.save(dog)
         return dog

@@ -61,7 +61,9 @@ def persist_owner(owner: Owner) -> None:
         defaults={
             "user": user,
             "nickname": owner.nickname,
-            "profile_image_key": owner.profile_image_key.value if owner.profile_image_key else None,
+            "profile_image_key": owner.profile_image_key.value
+            if owner.profile_image_key
+            else None,
             "created_at": owner.created_at,
         },
     )
@@ -89,7 +91,9 @@ def persist_dog(dog: Dog) -> None:
             "weight": dog.weight,
             "color": dog.color,
             "gender": dog.gender,
-            "profile_image_key": dog.profile_image_key.value if dog.profile_image_key else None,
+            "profile_image_key": dog.profile_image_key.value
+            if dog.profile_image_key
+            else None,
             "created_at": dog.created_at,
         },
     )
