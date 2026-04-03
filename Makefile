@@ -3,7 +3,7 @@ DC := docker compose
 .PHONY: help up down restart ps logs build pull \
 	bash-backend bash-db psql \
 	migrate makemigrations test \
-	lint-backend pre-commit-install \
+	lint-backend lint-backend-fix pre-commit-install \
 	pr pr-draft pr-web \
 	commit review approve push
 
@@ -28,7 +28,8 @@ help:
 	@echo "  migrate       Run Django migrations"
 	@echo "  makemigrations Create Django migration files"
 	@echo "  test          Run backend pytest"
-	@echo "  lint-backend  Ruff (check + format --check) on backend/ (要: pip install -r backend/requirements-dev.txt)"
+	@echo "  lint-backend      Ruff (check + format --check) on backend/ (要: python3 -m pip install -r backend/requirements-dev.txt)"
+	@echo "  lint-backend-fix  Ruff で自動修正（check --fix + format 書き込み）"
 	@echo "  pre-commit-install  pip install pre-commit && pre-commit install（ルート）"
 	@echo ""
 	@echo "Git / GitHub:"
@@ -80,8 +81,12 @@ test:
 	$(DC) exec backend pytest -q
 
 lint-backend:
-	@command -v ruff >/dev/null 2>&1 || (echo "ruff が必要です: pip install -r backend/requirements-dev.txt" && false)
-	cd backend && ruff check . && ruff format --check .
+	@python3 -m ruff --version >/dev/null 2>&1 || (echo "ruff が必要です: python3 -m pip install -r backend/requirements-dev.txt" && false)
+	cd backend && python3 -m ruff check . && python3 -m ruff format --check .
+
+lint-backend-fix:
+	@python3 -m ruff --version >/dev/null 2>&1 || (echo "ruff が必要です: python3 -m pip install -r backend/requirements-dev.txt" && false)
+	cd backend && python3 -m ruff check . --fix && python3 -m ruff format .
 
 pre-commit-install:
 	python3 -m pip install -q pre-commit
