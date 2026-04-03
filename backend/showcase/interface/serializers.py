@@ -5,6 +5,13 @@ from showcase.domain.dog import Dog
 from showcase.domain.owner import Owner
 
 
+def refresh_access_to_json(*, access: str) -> dict:
+    return {
+        "access": access,
+        "token_type": "Bearer",
+    }
+
+
 def login_result_to_json(*, access: str, refresh: str, owner: Owner) -> dict:
     return {
         "access": access,

@@ -13,6 +13,10 @@ from showcase.application.get_my_profile import GetMyProfileUseCase
 from showcase.application.list_all_dogs import ListAllDogsUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
 from showcase.application.login_owner import LoginFailedError, LoginOwnerUseCase
+from showcase.application.refresh_access_token import (
+    RefreshAccessTokenUseCase,
+    RefreshTokenInvalidError,
+)
 from showcase.application.register_owner import RegisterOwnerUseCase
 from showcase.application.update_my_dog import UpdateMyDogUseCase
 from showcase.application.update_my_profile import UpdateMyProfileUseCase
@@ -29,6 +33,7 @@ from showcase.interface.serializers import (
     dog_to_json,
     login_result_to_json,
     owner_to_json,
+    refresh_access_to_json,
 )
 
 
@@ -205,6 +210,39 @@ def auth_login(request):
             status=HTTPStatus.METHOD_NOT_ALLOWED,
         )
     return post_auth_login(request)
+
+
+def post_auth_refresh(request):
+    """`/api/auth/refresh/` の POST。リフレッシュトークンから access を再発行する。"""
+    try:
+        payload = parse_request_payload(request)
+        use_case = RefreshAccessTokenUseCase()
+        access = use_case.execute(payload)
+        return json_response(refresh_access_to_json(access=access))
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except RefreshTokenInvalidError:
+        return json_response(
+            {
+                "code": "invalid_refresh_token",
+                "message": "リフレッシュトークンが無効または期限切れです",
+            },
+            status=HTTPStatus.UNAUTHORIZED,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_refresh(request):
+    """`/api/auth/refresh/` の POST のみ。"""
+    if request.method != "POST":
+        return json_response(
+            {"code": "method_not_allowed", "message": "Method not allowed"},
+            status=HTTPStatus.METHOD_NOT_ALLOWED,
+        )
+    return post_auth_refresh(request)
 
 
 # Dogs
