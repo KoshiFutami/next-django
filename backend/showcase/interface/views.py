@@ -1,10 +1,12 @@
 import json
 from http import HTTPStatus
+from uuid import UUID
 
 from django.db import DatabaseError, connection
 from django.views.decorators.csrf import csrf_exempt
 
 from showcase.application.create_dog import CreateDogUseCase
+from showcase.application.get_my_dog import GetMyDogUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
 from showcase.application.list_my_dogs import ListMyDogsUseCase
 from showcase.infrastructure import DjangoBreedRepository
@@ -88,6 +90,24 @@ def dogs(request):
             status=HTTPStatus.METHOD_NOT_ALLOWED,
         )
     return dogs_create(request)
+
+
+def dog_detail(request, dog_id: UUID):
+    """`/api/dogs/<dog_id>/` の GET。本人の犬のみ。"""
+    if request.method != "GET":
+        return json_response(
+            {"code": "method_not_allowed", "message": "Method not allowed"},
+            status=HTTPStatus.METHOD_NOT_ALLOWED,
+        )
+    owner_id = get_current_owner_id(request)
+    use_case = GetMyDogUseCase(DjangoDogRepository())
+    dog = use_case.execute(owner_id, dog_id)
+    if dog is None:
+        return json_response(
+            {"code": "not_found", "message": "Dog not found"},
+            status=HTTPStatus.NOT_FOUND,
+        )
+    return json_response(dog_to_json(dog))
 
 
 # Breeds

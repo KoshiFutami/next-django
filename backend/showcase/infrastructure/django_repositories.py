@@ -61,6 +61,15 @@ class DjangoDogRepository:
             return None
         return mappers.dog_row_to_domain(row)
 
+    def get_by_id_for_owner(self, owner_id: OwnerId, dog_id: UUID) -> Dog | None:
+        try:
+            row = DogRow.objects.select_related("breed", "owner").get(
+                pk=dog_id, owner_id=owner_id.value
+            )
+        except DogRow.DoesNotExist:
+            return None
+        return mappers.dog_row_to_domain(row)
+
     def list_by_owner(self, owner_id: OwnerId) -> list[Dog]:
         qs = DogRow.objects.select_related("breed", "owner").filter(
             owner_id=owner_id.value
