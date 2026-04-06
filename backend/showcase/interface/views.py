@@ -9,15 +9,41 @@ from django.views.decorators.csrf import csrf_exempt
 from showcase.application.create_my_dog import CreateMyDogUseCase
 from showcase.application.delete_my_dog import DeleteMyDogUseCase
 from showcase.application.get_dog import GetDogUseCase
+from showcase.application.get_my_profile import GetMyProfileUseCase
 from showcase.application.list_all_dogs import ListAllDogsUseCase
 from showcase.application.list_breeds import ListBreedsUseCase
+from showcase.application.login_owner import LoginFailedError, LoginOwnerUseCase
+from showcase.application.logout_owner import (
+    LogoutOwnerUseCase,
+    RefreshAccessMismatchError,
+)
+from showcase.application.refresh_access_token import (
+    RefreshAccessTokenUseCase,
+    RefreshTokenInvalidError,
+)
+from showcase.application.register_owner import RegisterOwnerUseCase
 from showcase.application.update_my_dog import UpdateMyDogUseCase
-from showcase.domain.exceptions import DomainValidationError
-from showcase.infrastructure import DjangoBreedRepository
+from showcase.application.update_my_profile import UpdateMyProfileUseCase
+from showcase.domain.exceptions import (
+    DomainValidationError,
+    EmailAlreadyRegisteredError,
+    HandleAlreadyRegisteredError,
+)
+from showcase.infrastructure import DjangoBreedRepository, DjangoOwnerRepository
 from showcase.infrastructure.django_repositories import DjangoDogRepository
-from showcase.interface.auth import get_current_owner_id
+from showcase.interface.auth import (
+    OwnerAuthError,
+    get_current_owner_id,
+    require_access_token_user_id,
+)
 from showcase.interface.responses import json_response
-from showcase.interface.serializers import breed_to_json, dog_to_json
+from showcase.interface.serializers import (
+    breed_to_json,
+    dog_to_json,
+    login_result_to_json,
+    owner_to_json,
+    refresh_access_to_json,
+)
 
 
 def parse_request_payload(request) -> dict:
@@ -35,6 +61,13 @@ def parse_request_payload(request) -> dict:
     return request.POST.dict()
 
 
+def _unauthorized_json(message: str):
+    return json_response(
+        {"code": "unauthorized", "message": message},
+        status=HTTPStatus.UNAUTHORIZED,
+    )
+
+
 # Health Check
 def health(_request):
     """ヘルスチェックを返す。"""
@@ -47,6 +80,237 @@ def health(_request):
             status=HTTPStatus.SERVICE_UNAVAILABLE,
         )
     return json_response({"status": "ok"})
+
+
+# Auth / Owner profile（Bearer 時は JWT、無ければスタブ Owner ID）
+def get_auth_me(request):
+    try:
+        owner_id = get_current_owner_id(request)
+    except OwnerAuthError as exc:
+        return _unauthorized_json(str(exc))
+    use_case = GetMyProfileUseCase(DjangoOwnerRepository())
+    owner = use_case.execute(owner_id)
+    if owner is None:
+        return json_response(
+            {"code": "not_found", "message": "Owner not found"},
+            status=HTTPStatus.NOT_FOUND,
+        )
+    return json_response(owner_to_json(owner))
+
+
+def patch_auth_me(request):
+    try:
+        owner_id = get_current_owner_id(request)
+        payload = parse_request_payload(request)
+        use_case = UpdateMyProfileUseCase(DjangoOwnerRepository())
+        owner = use_case.execute(owner_id, payload)
+        if owner is None:
+            return json_response(
+                {"code": "not_found", "message": "Owner not found"},
+                status=HTTPStatus.NOT_FOUND,
+            )
+        return json_response(owner_to_json(owner))
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except DomainValidationError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except HandleAlreadyRegisteredError:
+        return json_response(
+            {
+                "code": "handle_already_registered",
+                "message": "このハンドルは既に使われています",
+            },
+            status=HTTPStatus.CONFLICT,
+        )
+    except OwnerAuthError as exc:
+        return _unauthorized_json(str(exc))
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_me(request):
+    """`/api/auth/me/` の GET / PATCH。現在のオーナープロフィール。"""
+    match request.method:
+        case "GET":
+            return get_auth_me(request)
+        case "PATCH":
+            return patch_auth_me(request)
+        case _:
+            return json_response(
+                {"code": "method_not_allowed", "message": "Method not allowed"},
+                status=HTTPStatus.METHOD_NOT_ALLOWED,
+            )
+
+
+def post_auth_register(request):
+    """`/api/auth/register/` の POST。メール・パスワード・ニックネーム・本名・ハンドルで Owner を新規作成。"""
+    try:
+        payload = parse_request_payload(request)
+        use_case = RegisterOwnerUseCase(DjangoOwnerRepository())
+        owner = use_case.execute(payload)
+        return json_response(owner_to_json(owner), status=HTTPStatus.CREATED)
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except DomainValidationError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except EmailAlreadyRegisteredError:
+        return json_response(
+            {
+                "code": "email_already_registered",
+                "message": "このメールアドレスは既に登録されています",
+            },
+            status=HTTPStatus.CONFLICT,
+        )
+    except HandleAlreadyRegisteredError:
+        return json_response(
+            {
+                "code": "handle_already_registered",
+                "message": "このハンドルは既に使われています",
+            },
+            status=HTTPStatus.CONFLICT,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_register(request):
+    """`/api/auth/register/` の POST のみ。"""
+    if request.method != "POST":
+        return json_response(
+            {"code": "method_not_allowed", "message": "Method not allowed"},
+            status=HTTPStatus.METHOD_NOT_ALLOWED,
+        )
+    return post_auth_register(request)
+
+
+def post_auth_login(request):
+    """`/api/auth/login/` の POST。メール・パスワードで JWT を発行する。"""
+    try:
+        payload = parse_request_payload(request)
+        use_case = LoginOwnerUseCase(DjangoOwnerRepository())
+        result = use_case.execute(payload)
+        return json_response(
+            login_result_to_json(
+                access=result.access,
+                refresh=result.refresh,
+                owner=result.owner,
+            )
+        )
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except DomainValidationError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except LoginFailedError:
+        return json_response(
+            {
+                "code": "invalid_credentials",
+                "message": "メールアドレスまたはパスワードが正しくありません",
+            },
+            status=HTTPStatus.UNAUTHORIZED,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_login(request):
+    """`/api/auth/login/` の POST のみ。"""
+    if request.method != "POST":
+        return json_response(
+            {"code": "method_not_allowed", "message": "Method not allowed"},
+            status=HTTPStatus.METHOD_NOT_ALLOWED,
+        )
+    return post_auth_login(request)
+
+
+def post_auth_refresh(request):
+    """`/api/auth/refresh/` の POST。リフレッシュトークンから access を再発行する。"""
+    try:
+        payload = parse_request_payload(request)
+        use_case = RefreshAccessTokenUseCase()
+        access = use_case.execute(payload)
+        return json_response(refresh_access_to_json(access=access))
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except RefreshTokenInvalidError:
+        return json_response(
+            {
+                "code": "invalid_refresh_token",
+                "message": "リフレッシュトークンが無効または期限切れです",
+            },
+            status=HTTPStatus.UNAUTHORIZED,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_refresh(request):
+    """`/api/auth/refresh/` の POST のみ。"""
+    if request.method != "POST":
+        return json_response(
+            {"code": "method_not_allowed", "message": "Method not allowed"},
+            status=HTTPStatus.METHOD_NOT_ALLOWED,
+        )
+    return post_auth_refresh(request)
+
+
+def post_auth_logout(request):
+    """`/api/auth/logout/` の POST。access + body.refresh でリフレッシュを失効（ブラックリスト）。"""
+    try:
+        access_user_id = require_access_token_user_id(request)
+        payload = parse_request_payload(request)
+        LogoutOwnerUseCase().execute(access_user_id, payload)
+        return HttpResponse(status=HTTPStatus.NO_CONTENT)
+    except OwnerAuthError as exc:
+        return _unauthorized_json(str(exc))
+    except ValueError as exc:
+        return json_response(
+            {"code": "bad_request", "message": str(exc)},
+            status=HTTPStatus.BAD_REQUEST,
+        )
+    except RefreshTokenInvalidError:
+        return json_response(
+            {
+                "code": "invalid_refresh_token",
+                "message": "リフレッシュトークンが無効または期限切れです",
+            },
+            status=HTTPStatus.UNAUTHORIZED,
+        )
+    except RefreshAccessMismatchError:
+        return json_response(
+            {
+                "code": "forbidden",
+                "message": "リフレッシュトークンがこのセッションと一致しません",
+            },
+            status=HTTPStatus.FORBIDDEN,
+        )
+
+
+@csrf_exempt  # NOTE: 開発中の Postman 動作確認用。認証実装時に外す。
+def auth_logout(request):
+    """`/api/auth/logout/` の POST のみ。要 Bearer access + JSON refresh。"""
+    if request.method != "POST":
+        return json_response(
+            {"code": "method_not_allowed", "message": "Method not allowed"},
+            status=HTTPStatus.METHOD_NOT_ALLOWED,
+        )
+    return post_auth_logout(request)
 
 
 # Dogs
@@ -70,6 +334,8 @@ def create_my_dog(request):
         payload = parse_request_payload(request)
         dog = use_case.execute(owner_id, payload)
         return json_response(payload=dog_to_json(dog), status=HTTPStatus.CREATED)
+    except OwnerAuthError as exc:
+        return _unauthorized_json(str(exc))
     except ValueError as exc:
         return json_response(
             {"code": "bad_request", "message": str(exc)},
@@ -108,6 +374,8 @@ def patch_my_dog_detail(request, dog_id: UUID):
                 status=HTTPStatus.NOT_FOUND,
             )
         return json_response(dog_to_json(dog))
+    except OwnerAuthError as exc:
+        return _unauthorized_json(str(exc))
     except ValueError as exc:
         return json_response(
             {"code": "bad_request", "message": str(exc)},
@@ -122,7 +390,10 @@ def patch_my_dog_detail(request, dog_id: UUID):
 
 def delete_my_dog_detail(request, dog_id: UUID):
     """`/api/dogs/<dog_id>/` の DELETE。本人の犬のみ。"""
-    owner_id = get_current_owner_id(request)
+    try:
+        owner_id = get_current_owner_id(request)
+    except OwnerAuthError as exc:
+        return _unauthorized_json(str(exc))
     use_case = DeleteMyDogUseCase(DjangoDogRepository())
     if use_case.execute(owner_id, dog_id) == 0:
         return json_response(

@@ -3,6 +3,7 @@ Django settings for config project.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,6 +30,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "showcase",
 ]
 
@@ -102,6 +105,17 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# 個人情報暗号化（Fernet）。未設定時は SECRET_KEY から導出（本番では環境変数で 32 バイト鍵を指定推奨）
+SHOWCASE_PII_FERNET_KEY = os.environ.get("SHOWCASE_PII_FERNET_KEY", "").strip() or None
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "SIGNING_KEY": SECRET_KEY,
+    "ALGORITHM": "HS256",
+}
 
 # 開発用: 犬一覧などの認証スタブで使う OwnerProfile.id（UUID 文字列）
 SHOWCASE_STUB_OWNER_ID = os.environ.get(

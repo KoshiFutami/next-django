@@ -14,6 +14,19 @@ class OwnerProfile(models.Model):
         related_name="owner_profile",
     )
     nickname = models.CharField(max_length=64)
+    full_name = models.TextField(
+        help_text="本名の Fernet 暗号文（平文はアプリ内のみ）",
+    )
+    handle = models.CharField(
+        max_length=30,
+        unique=True,
+        help_text="公開ハンドル（小文字・@ なし、一意・必須）",
+    )
+    pii_email_ciphertext = models.TextField(
+        blank=True,
+        null=True,
+        help_text="正規化済みメールの Fernet 暗号文（平文は User に保存しない）",
+    )
     profile_image_key = models.CharField(max_length=512, blank=True, null=True)
     created_at = models.DateTimeField()
 

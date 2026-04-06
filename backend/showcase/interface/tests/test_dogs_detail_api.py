@@ -2,13 +2,15 @@ from datetime import date, datetime, timezone
 from uuid import UUID, uuid4
 
 import pytest
-from django.contrib.auth import get_user_model
 from django.test import Client
 from django.test.utils import override_settings
 
+from showcase.interface.tests.pii_test_util import (
+    create_owner_profile,
+    create_user,
+)
 from showcase.models import Breed as BreedRow
 from showcase.models import Dog as DogRow
-from showcase.models import OwnerProfile as OwnerProfileRow
 
 STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
@@ -16,15 +18,12 @@ STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_detail_get_returns_dog():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="detail@example.com", email="detail@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("detail@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="detail@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
     dog = DogRow.objects.create(
@@ -50,24 +49,20 @@ def test_dogs_detail_get_returns_dog():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_detail_get_other_owners_dog_returns_200():
-    User = get_user_model()
-    u_stub = User.objects.create_user(
-        username="stub2@example.com", email="stub2@example.com", password="x"
-    )
-    u_other = User.objects.create_user(
-        username="other2@example.com", email="other2@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u_stub = create_user("stub2@example.com", "x")
+    u_other = create_user("other2@example.com", "x")
+    create_owner_profile(
         user=u_stub,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="stub2@example.com",
     )
     other_id = uuid4()
-    OwnerProfileRow.objects.create(
-        id=other_id,
+    create_owner_profile(
         user=u_other,
+        owner_id=other_id,
         nickname="他人",
+        account_email="other2@example.com",
         created_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
@@ -93,15 +88,12 @@ def test_dogs_detail_get_other_owners_dog_returns_200():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_detail_unknown_id_returns_404():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="none@example.com", email="none@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("none@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="none@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
 
@@ -114,15 +106,12 @@ def test_dogs_detail_unknown_id_returns_404():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_detail_post_method_not_allowed():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="mna@example.com", email="mna@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("mna@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="mna@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
     dog = DogRow.objects.create(
@@ -145,15 +134,12 @@ def test_dogs_detail_post_method_not_allowed():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_detail_delete_returns_204_and_removes_row():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="del@example.com", email="del@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("del@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="del@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
     dog = DogRow.objects.create(
@@ -177,15 +163,12 @@ def test_dogs_detail_delete_returns_204_and_removes_row():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_detail_delete_unknown_returns_404():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="del404@example.com", email="del404@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("del404@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="del404@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
 
@@ -198,24 +181,20 @@ def test_dogs_detail_delete_unknown_returns_404():
 @pytest.mark.django_db
 @override_settings(SHOWCASE_STUB_OWNER_ID=str(STUB_OWNER_ID))
 def test_dogs_detail_delete_other_owners_dog_returns_404():
-    User = get_user_model()
-    u_stub = User.objects.create_user(
-        username="dstub@example.com", email="dstub@example.com", password="x"
-    )
-    u_other = User.objects.create_user(
-        username="dother@example.com", email="dother@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u_stub = create_user("dstub@example.com", "x")
+    u_other = create_user("dother@example.com", "x")
+    create_owner_profile(
         user=u_stub,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="dstub@example.com",
     )
     other_id = uuid4()
-    OwnerProfileRow.objects.create(
-        id=other_id,
+    create_owner_profile(
         user=u_other,
+        owner_id=other_id,
         nickname="他人",
+        account_email="dother@example.com",
         created_at=datetime(2024, 1, 2, tzinfo=timezone.utc),
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=0)
