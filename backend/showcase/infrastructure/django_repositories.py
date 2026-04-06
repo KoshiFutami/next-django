@@ -3,13 +3,15 @@
 from uuid import UUID
 
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 
 from showcase.domain.breed import Breed
 from showcase.domain.dog import Dog
 from showcase.domain.email import Email
+from showcase.domain.exceptions import EmailAlreadyRegisteredError
 from showcase.domain.owner import Owner
 from showcase.domain.owner_id import OwnerId
-from showcase.infrastructure import mappers
+from showcase.infrastructure import mappers, pii_crypto
 from showcase.models import Breed as BreedRow
 from showcase.models import Dog as DogRow
 from showcase.models import OwnerProfile as OwnerProfileRow
@@ -26,7 +28,7 @@ class DjangoOwnerRepository:
     def get_by_email(self, email: Email) -> Owner | None:
         User = get_user_model()
         try:
-            user = User.objects.get(username=email.value)
+            user = User.objects.get(username=pii_crypto.email_login_username(email))
         except User.DoesNotExist:
             return None
         row = OwnerProfileRow.objects.filter(user=user).first()
@@ -36,6 +38,26 @@ class DjangoOwnerRepository:
 
     def save(self, owner: Owner) -> None:
         mappers.persist_owner(owner)
+
+    def is_email_registered(self, email: Email) -> bool:
+        User = get_user_model()
+        return User.objects.filter(
+            username=pii_crypto.email_login_username(email)
+        ).exists()
+
+    def is_handle_taken(
+        self, normalized_handle: str, *, exclude_owner_id: OwnerId | None = None
+    ) -> bool:
+        qs = OwnerProfileRow.objects.filter(handle=normalized_handle)
+        if exclude_owner_id is not None:
+            qs = qs.exclude(pk=exclude_owner_id.value)
+        return qs.exists()
+
+    def register_with_password(self, owner: Owner, password: str) -> None:
+        try:
+            mappers.create_owner_with_password(owner, password)
+        except IntegrityError as exc:
+            raise EmailAlreadyRegisteredError from exc
 
 
 class DjangoBreedRepository:

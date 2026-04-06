@@ -2,6 +2,37 @@
 
 from showcase.domain.breed import Breed
 from showcase.domain.dog import Dog
+from showcase.domain.owner import Owner
+
+
+def refresh_access_to_json(*, access: str) -> dict:
+    return {
+        "access": access,
+        "token_type": "Bearer",
+    }
+
+
+def login_result_to_json(*, access: str, refresh: str, owner: Owner) -> dict:
+    return {
+        "access": access,
+        "refresh": refresh,
+        "token_type": "Bearer",
+        "owner": owner_to_json(owner),
+    }
+
+
+def owner_to_json(owner: Owner) -> dict:
+    return {
+        "id": str(owner.id.value),
+        "email": owner.email.value,
+        "nickname": owner.nickname,
+        "full_name": owner.full_name,
+        "handle": owner.handle,
+        "profile_image_key": owner.profile_image_key.value
+        if owner.profile_image_key
+        else None,
+        "created_at": owner.created_at.isoformat(),
+    }
 
 
 def dog_to_json(dog: Dog) -> dict:

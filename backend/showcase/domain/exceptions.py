@@ -7,3 +7,11 @@ class DomainError(Exception):
 
 class DomainValidationError(DomainError):
     """入力や状態が不変条件を満たさない。"""
+
+
+class EmailAlreadyRegisteredError(DomainError):
+    """同じメールアドレスで既に利用者が登録されている。"""
+
+
+class HandleAlreadyRegisteredError(DomainError):
+    """同じハンドルで既に利用者が登録されている。"""

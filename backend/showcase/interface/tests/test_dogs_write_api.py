@@ -1,29 +1,27 @@
 import json
-from datetime import datetime, timezone
 from uuid import UUID
 
 import pytest
-from django.contrib.auth import get_user_model
 from django.test import Client
 from django.test.utils import override_settings
 
+from showcase.interface.tests.pii_test_util import (
+    create_owner_profile,
+    create_user,
+)
 from showcase.models import Breed as BreedRow
 from showcase.models import Dog as DogRow
-from showcase.models import OwnerProfile as OwnerProfileRow
 
 STUB_OWNER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _stub_owner_and_breed():
-    User = get_user_model()
-    u = User.objects.create_user(
-        username="stub-w@example.com", email="stub-w@example.com", password="x"
-    )
-    OwnerProfileRow.objects.create(
-        id=STUB_OWNER_ID,
+    u = create_user("stub-w@example.com", "x")
+    create_owner_profile(
         user=u,
+        owner_id=STUB_OWNER_ID,
         nickname="スタブ",
-        created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        account_email="stub-w@example.com",
     )
     BreedRow.objects.create(code=1, name="柴犬", sort_order=10)
 
@@ -50,7 +48,9 @@ def test_dogs_post_json_creates_dog():
     data = res.json()
     assert data["name"] == "ポチ"
     assert data["breed_code"] == 1
-    assert DogRow.objects.filter(owner_id=STUB_OWNER_ID, name="ポチ").exists()
+    row = DogRow.objects.get(pk=data["id"])
+    assert row.owner_id == STUB_OWNER_ID
+    assert row.name == "ポチ"
 
 
 @pytest.mark.django_db

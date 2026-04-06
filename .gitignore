@@ -10,5 +10,9 @@ frontend/node_modules/
 frontend/.next/
 frontend/out/
 
+# SchemaSpy 生成 HTML（CI は GitHub Pages にデプロイ、ローカルは make schemaspy）
+docs/schemaspy/*
+!docs/schemaspy/README.md
+
 # OS / IDE
 .DS_Store
