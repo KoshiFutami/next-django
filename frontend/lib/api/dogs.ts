@@ -1,8 +1,23 @@
 import { getServerApiBaseUrl } from "./server-base-url";
 import { apiPaths } from "./routes";
-import { Dog, isDogJson } from "../types/dog";
+import { Dog, isDogJson, isDogsListJson } from "../types/dog";
 import { notFound } from "next/navigation";
 
+export async function fetchDogs(): Promise<Dog[]> {
+    const baseUrl = getServerApiBaseUrl();
+    const url = new URL(baseUrl + apiPaths.dogs.list);
+    const response = await fetch(url.toString());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch dogs: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!isDogsListJson(data)) {
+        throw new Error("Invalid dogs list JSON");
+    }
+    return data.items;
+}
 
 export async function fetchDog(id: string): Promise<Dog | null> {
     const baseUrl = getServerApiBaseUrl();
