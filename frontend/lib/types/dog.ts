@@ -26,3 +26,12 @@ export function isDogJson(data: unknown): data is Dog {
         typeof d.created_at === 'string'
     );
 }
+
+export type DogsListResponse = { items: Dog[] };
+
+export function isDogsListJson(data: unknown): data is DogsListResponse {
+    if (!data || typeof data !== 'object') return false;
+    const d = data as Record<string, unknown>;
+    if (!Array.isArray(d.items)) return false;
+    return d.items.every((item) => isDogJson(item));
+}
